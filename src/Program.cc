@@ -108,8 +108,8 @@ bool Program::Init() {
 	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
 	if (!cam->Init()) return false;
 
-	model = new Model();
-	if(!model->Init("resources/sponza.obj")) return false;
+	modelLoader = new ModelLoader();
+	if(!modelLoader->Init("resources/sponza.obj")) return false;
 
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
@@ -138,7 +138,7 @@ void Program::Render() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	model->Draw();
+	modelLoader->Draw();
 
 	TwDraw();
 

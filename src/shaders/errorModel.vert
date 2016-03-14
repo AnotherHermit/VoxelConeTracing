@@ -7,10 +7,10 @@
 
 #version 430
 
-in vec3 exNormal;
-in vec4 exPosition;
+in vec3 posValue;
+in vec3 inPosition;
+in vec3 inNormal;
 
-out vec4 outColor;
 
 struct Camera {
 	mat4 WTVmatrix;
@@ -31,15 +31,7 @@ layout (std140, binding = 12) uniform ProgramBuffer {
 	Program prog;
 };
 
-void main()
-{	
-	// Calculate diffuse light
-	vec3 light = mat3(cam.WTVmatrix) * vec3(0.707, 0.707, 0);
-	float shade = max(dot(normalize(exNormal), light), 0.1);
-
-	// Set constant color for textureless models
-	vec3 color = vec3(1.0, 0.0, 1.0) * shade;
-	
-	// Output complete color
-	outColor =  vec4(color, 1.0f);
+void main(void)
+{
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix * vec4(inPosition, 1.0f);
 }

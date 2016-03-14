@@ -54,7 +54,7 @@ private:
 	TwBar *antBar;
 	
 	// Model
-	Model* model;
+	ModelLoader* modelLoader;
 
 	// Program params
 	glm::vec3 cameraStartPos;

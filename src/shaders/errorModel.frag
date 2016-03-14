@@ -33,12 +33,8 @@ layout (std140, binding = 12) uniform ProgramBuffer {
 
 void main()
 {	
-	// Calculate diffuse light
-	vec3 light = mat3(cam.WTVmatrix) * vec3(0.707, 0.707, 0);
-	float shade = max(dot(normalize(exNormal), light), 0.1);
-
-	// Set constant color for textureless models
-	vec3 color = vec3(1.0, 0.0, 1.0) * shade;
+	// Set constant color for error models
+	vec3 color = vec3(1.0, 0.0, 0.0);
 	
 	// Output complete color
 	outColor =  vec4(color, 1.0f);

@@ -17,18 +17,12 @@ out vec4 exPosition;
 struct Camera {
 	mat4 WTVmatrix;
 	mat4 VTPmatrix;
-	vec4 normals[8];
-	vec4 points[8];
 	vec3 position;
-	uint padding99;
-	vec4 lodLevels;
 };
 
 struct Program {
 	float currentT;
 	float deltaT;
-	float radius;
-	float simSpeed;
 };
 
 layout (std140, binding = 10) uniform CameraBuffer {
