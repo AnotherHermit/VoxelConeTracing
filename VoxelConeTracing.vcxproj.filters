@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header Files\common">
+      <UniqueIdentifier>{e84bb44e-a6e3-4e28-8700-a18b6c816d68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\common">
+      <UniqueIdentifier>{eece598b-7877-4c5b-8acc-8f580206c711}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\common\Externals">
+      <UniqueIdentifier>{fc350f3c-cdb6-41f7-825b-8e280ed41816}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\common\Externals">
+      <UniqueIdentifier>{38726a6d-a086-4034-a000-cd8163bdce8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{d88f6b57-37dd-4a8d-92f1-b62e66b5b161}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\Drawing">
+      <UniqueIdentifier>{d50d27cf-b6e7-4ac7-9703-8739aeab810a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\common\Windows\glew.c">
+      <Filter>Source Files\common\Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\GL_utilities.cc">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Program.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\myDrawable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\common\GL_utilities.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\AntTweak\AntTweakBar.h">
+      <Filter>Header Files\common\Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\Windows\glew.h">
+      <Filter>Header Files\common\Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\Windows\wglew.h">
+      <Filter>Header Files\common\Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\myDrawable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\tiny_obj_loader.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\shaders\simpleModel.vert">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\simpleModel.frag">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+  </ItemGroup>
+</Project>

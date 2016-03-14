@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MasterSource", "VoxelConeTracing.vcxproj", "{704D1637-B144-400E-8538-A86DBCFCC569}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Analysis|Win32 = Analysis|Win32
+		Analysis|x64 = Analysis|x64
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+		Test|Win32 = Test|Win32
+		Test|x64 = Test|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Analysis|Win32.ActiveCfg = Analysis|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Analysis|Win32.Build.0 = Analysis|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Analysis|x64.ActiveCfg = Analysis|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Analysis|x64.Build.0 = Analysis|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Debug|Win32.ActiveCfg = Debug|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Debug|Win32.Build.0 = Debug|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Debug|x64.ActiveCfg = Debug|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Debug|x64.Build.0 = Debug|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Release|Win32.ActiveCfg = Release|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Release|Win32.Build.0 = Release|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Release|x64.ActiveCfg = Release|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Release|x64.Build.0 = Release|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Test|Win32.ActiveCfg = Test|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Test|Win32.Build.0 = Test|Win32
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Test|x64.ActiveCfg = Test|x64
+		{704D1637-B144-400E-8538-A86DBCFCC569}.Test|x64.Build.0 = Test|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
