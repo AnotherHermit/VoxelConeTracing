@@ -67,6 +67,8 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	printError("Set standard model data");
 }
 
 void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
@@ -87,11 +89,14 @@ void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0);
+
+	printError("Set texture data");
 }
 
 void Model::SetMaterial(TextureData* textureData) {
 	bumpID = textureData->bumpID;
 	diffuseID = textureData->diffuseID;
+	maskID = textureData->maskID;
 }
 
 void Model::SetProgram(GLuint initProgram) {
@@ -106,26 +111,35 @@ bool Model::hasDiffuseTex() {
 	return diffuseID != -1;
 }
 
+bool Model::hasMaskTex() {
+	return maskID != -1;
+}
+
 void Model::Draw() {
 	if(!hasDiffuseTex()) {
 		return;
 	}
-
 	glUseProgram(program);
 	glBindVertexArray(vao);
 
 	if(hasDiffuseTex()) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseID);
+
+		glEnable(GL_CULL_FACE);
 	}
 
-	if(hasBumpTex()) {
+	if(hasMaskTex()) {
+		glDisable(GL_CULL_FACE);
+
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, bumpID);
+		glBindTexture(GL_TEXTURE_2D, maskID);
 	}
 
 	glDrawElements(GL_TRIANGLES, (GLsizei)nIndices, GL_UNSIGNED_INT, 0L);
 	glBindVertexArray(0);
+
+	printError("Draw Model");
 }
 
 
@@ -159,21 +173,19 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 
 	switch(nByte) {
 		case 1:
-			type = GL_R;
+			type = GL_ALPHA;
 			break;
-
-		case 2:
-			type = GL_RG;
-			break;
-
+			
 		case 3:
 			type = GL_RGB;
 			break;
 
 		case 4:
-		default:
 			type = GL_RGBA;
 			break;
+
+		default:
+			std::cerr << "Bpp is in unknown format...\n";
 	}
 	glTexImage2D(GL_TEXTURE_2D, 0, type, x, y, 0, type, GL_UNSIGNED_BYTE, data);
 
@@ -204,6 +216,12 @@ bool ModelLoader::LoadTextures() {
 			data->bumpID = LoadTexture(startPath.append(materials[i].bump_texname).c_str());
 		}*/
 
+		data->maskID = -1;
+		startPath = "resources/";
+		if(!materials[i].alpha_texname.empty()) {
+			data->maskID = LoadTexture(startPath.append(materials[i].alpha_texname).c_str());
+		}
+
 		textures.push_back(data);
 	}
 
@@ -216,12 +234,12 @@ void ModelLoader::AddModel(int id) {
 
 	model->SetMaterial(textures[shapes[id].mesh.material_ids[0]]);
 
-	if(model->hasBumpTex() || model->hasDiffuseTex()) {
-		if(model->hasBumpTex()) {
-			setProgram = bumpProgram;
-		} else {
-			setProgram = textureProgram;
-		}
+	if(model->hasBumpTex()) {
+		setProgram = bumpProgram;
+	} else if(model->hasMaskTex()) {
+		setProgram = maskProgram;
+	} else if (model->hasDiffuseTex()){
+		setProgram = textureProgram;
 	} else {
 		setProgram = simpleProgram;
 	}
@@ -231,12 +249,17 @@ void ModelLoader::AddModel(int id) {
 						   shapes[id].mesh.normals.size(), shapes[id].mesh.normals.data(),
 						   shapes[id].mesh.indices.size(), shapes[id].mesh.indices.data());
 
-	if(!model->hasBumpTex() && model->hasDiffuseTex()) {
+	if(setProgram != simpleProgram) {
 		model->SetTextureData(shapes[id].mesh.texcoords.size(), shapes[id].mesh.texcoords.data());
 	}
 
+	if(setProgram == maskProgram) {
+		models.push_back(model);
+	} else {
+		models.insert(models.begin(), model);
+	}
 
-	models.push_back(model);
+	
 }
 
 bool ModelLoader::Init(const char* path) {
@@ -254,9 +277,13 @@ bool ModelLoader::Init(const char* path) {
 	glGetProgramiv(textureProgram, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
-	//bumpProgram = loadShaders("src/shaders/bumpModel.vert", "src/shaders/bumpModel.frag");
-	//glGetProgramiv(bumpProgram, GL_LINK_STATUS, &err);
-	//if(err == GL_FALSE) return false;
+	bumpProgram = loadShaders("src/shaders/bumpModel.vert", "src/shaders/bumpModel.frag");
+	glGetProgramiv(bumpProgram, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	maskProgram = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
+	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
 
 	errorProgram = loadShaders("src/shaders/errorModel.vert", "src/shaders/errorModel.frag");
 	glGetProgramiv(errorProgram, GL_LINK_STATUS, &err);
@@ -270,6 +297,10 @@ bool ModelLoader::Init(const char* path) {
 	// Set constant uniforms
 	glUseProgram(textureProgram);
 	glUniform1i(glGetUniformLocation(textureProgram, "diffuseUnit"), 0);
+
+	glUseProgram(maskProgram);
+	glUniform1i(glGetUniformLocation(maskProgram, "diffuseUnit"), 0);
+	glUniform1i(glGetUniformLocation(maskProgram, "maskUnit"), 1);
 
 	//glUseProgram(bumpProgram);
 	//glUniform1i(glGetUniformLocation(bumpProgram, "diffuseUnit"), 0);

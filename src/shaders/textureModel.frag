@@ -44,6 +44,7 @@ void main()
 
 	// Set constant color for textured models
 	color = texture(diffuseUnit, exTexCoords) * shade;
+	color.a = 1.0;
 
 	// Output complete color
 	outColor =  color;

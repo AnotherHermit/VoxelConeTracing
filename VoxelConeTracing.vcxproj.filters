@@ -106,5 +106,11 @@
     <None Include="src\shaders\errorModel.vert">
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
+    <None Include="src\shaders\maskModel.frag">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\maskModel.vert">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
   </ItemGroup>
 </Project>

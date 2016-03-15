@@ -21,6 +21,7 @@
 struct TextureData {
 	GLuint diffuseID;
 	GLuint bumpID;
+	GLuint maskID;
 };
 
 // ===== Model Class =====
@@ -42,6 +43,8 @@ public:
 
 	bool hasDiffuseTex();
 	bool hasBumpTex();
+	bool hasMaskTex();
+
 private:
 	GLuint program;
 	GLuint vao;
@@ -52,6 +55,7 @@ private:
 
 	GLuint diffuseID;
 	GLuint bumpID;
+	GLuint maskID;
 	GLuint texbufferID;
 };
 
@@ -65,7 +69,7 @@ protected:
 	std::vector<Model*> models;
 	std::vector<TextureData*> textures;
 
-	GLuint simpleProgram, textureProgram, bumpProgram, errorProgram;
+	GLuint simpleProgram, textureProgram, bumpProgram, errorProgram, maskProgram;
 
 	void AddModel(int id);
 

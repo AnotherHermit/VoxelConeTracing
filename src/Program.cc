@@ -118,10 +118,12 @@ bool Program::Init() {
 	// Check if AntTweak Setup is ok
 	if (TwGetLastError() != NULL) return false;
 
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	return true;
 }
-
-
 
 void Program::Update() {
 	// Upload program params (incl time update)
@@ -135,8 +137,6 @@ void Program::Update() {
 
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
 
 	modelLoader->Draw();
 
