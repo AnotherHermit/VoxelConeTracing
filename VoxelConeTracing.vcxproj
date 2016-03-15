@@ -263,6 +263,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\common\AntTweak\AntTweakBar.h" />
     <ClInclude Include="src\common\GL_utilities.h" />
+    <ClInclude Include="src\common\stb_image.h" />
     <ClInclude Include="src\common\tiny_obj_loader.h" />
     <ClInclude Include="src\common\Windows\glew.h" />
     <ClInclude Include="src\common\Windows\wglew.h" />

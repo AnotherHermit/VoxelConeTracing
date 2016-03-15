@@ -7,28 +7,23 @@
 
 #version 430
 
-in vec3 posValue;
 in vec3 inPosition;
 in vec3 inNormal;
+in vec2 inTexCoords;
 
 out vec3 exNormal;
 out vec4 exPosition;
+out vec2 exTexCoords;
 
 struct Camera {
 	mat4 WTVmatrix;
 	mat4 VTPmatrix;
-	vec4 normals[8];
-	vec4 points[8];
 	vec3 position;
-	uint padding99;
-	vec4 lodLevels;
 };
 
 struct Program {
 	float currentT;
 	float deltaT;
-	float radius;
-	float simSpeed;
 };
 
 layout (std140, binding = 10) uniform CameraBuffer {
@@ -48,4 +43,6 @@ void main(void)
 	exPosition = temp;
 	
 	gl_Position = cam.VTPmatrix * temp;
+
+	exTexCoords = inTexCoords;
 }

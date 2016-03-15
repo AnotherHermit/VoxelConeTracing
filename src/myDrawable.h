@@ -16,17 +16,32 @@
 
 #include "glm.hpp"
 
+// ===== Texture Struct =====
+
+struct TextureData {
+	GLuint diffuseID;
+	GLuint bumpID;
+};
+
 // ===== Model Class =====
 
 class Model {
 public:
-	Model(GLuint initProgram);
+	Model() {}
 
 	virtual void Draw();
-	bool Init(size_t numVertices, GLfloat* verticeData,
+
+	void SetStandardData(size_t numVertices, GLfloat* verticeData,
 			  size_t numNormals, GLfloat* normalData,
 			  size_t numIndices, GLuint* indexData);
 
+	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
+
+	void SetProgram(GLuint initProgram);
+	void SetMaterial(TextureData* textureData);
+
+	bool hasDiffuseTex();
+	bool hasBumpTex();
 private:
 	GLuint program;
 	GLuint vao;
@@ -34,30 +49,10 @@ private:
 	GLuint normalbufferID;
 	GLuint indexbufferID;
 	size_t nIndices;
-};
 
-class TextureModel : public Model {
-public:
-	TextureModel(GLuint initProgram);
-
-	void Draw();
-	bool Init(size_t numVertices, GLfloat* verticeData,
-			   size_t numNormals, GLfloat* normalData,
-			   size_t numIndices, GLuint* indexData);
-
-private:
-	GLuint textureID;
-};
-
-class BumpModel : public TextureModel {
-public:
-	BumpModel(GLuint initProgram);
-
-	void Draw();
-	bool Init();
-
-private:
+	GLuint diffuseID;
 	GLuint bumpID;
+	GLuint texbufferID;
 };
 
 // ===== ModelLoader class =====
@@ -66,16 +61,21 @@ class ModelLoader {
 protected:
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
+
 	std::vector<Model*> models;
+	std::vector<TextureData*> textures;
 
 	GLuint simpleProgram, textureProgram, bumpProgram, errorProgram;
 
-	void addModel(int id);
+	void AddModel(int id);
 
-	bool loadModels(const char* path);
+	bool LoadModels(const char* path);
+	bool LoadTextures();
+
+	GLuint LoadTexture(const char* path);
 
 public:
-	ModelLoader() {};
+	ModelLoader() {}
 
 	bool Init(const char* path);
 	void Draw();

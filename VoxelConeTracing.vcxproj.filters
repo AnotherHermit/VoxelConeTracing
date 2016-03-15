@@ -77,6 +77,9 @@
     <ClInclude Include="src\common\tiny_obj_loader.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
+    <ClInclude Include="src\common\stb_image.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\simpleModel.vert">
