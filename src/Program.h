@@ -26,7 +26,7 @@
 #endif
 
 #include "Camera.h"
-#include "myDrawable.h"
+#include "ModelLoader.h"
 
 #include "GL_utilities.h"
 

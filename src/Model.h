@@ -5,16 +5,25 @@
 //
 ///////////////////////////////////////
 
-#ifndef myDrawable_H
-#define myDrawable_H
+#ifndef MODEL_H
+#define MODEL_H
 
-#include "tiny_obj_loader.h"
-
-#include "Camera.h"
-
-#include "GL_utilities.h"
-
-#include "glm.hpp"
+#ifdef __APPLE__
+#	include <OpenGL/gl3.h>
+#	include <SDL2/SDL.h>
+#else
+#	ifdef  __linux__
+#		define GL_GLEXT_PROTOTYPES
+#		include <GL/gl.h>
+#		include <GL/glu.h>
+#		include <GL/glx.h>
+#		include <GL/glext.h>
+#		include <SDL2/SDL.h>
+#	else
+#		include "glew.h"
+#		include "Windows/sdl2/SDL.h"
+#	endif
+#endif
 
 // ===== Texture Struct =====
 
@@ -30,20 +39,22 @@ class Model {
 public:
 	Model() {}
 
-	virtual void Draw();
+	void SetMaterial(TextureData* textureData);
+	void SetProgram(GLuint initProgram);
 
 	void SetStandardData(size_t numVertices, GLfloat* verticeData,
 			  size_t numNormals, GLfloat* normalData,
 			  size_t numIndices, GLuint* indexData);
 
+	// Set standard data must be used first since it creates the vao
+	// TODO: remove the ordering dependecy
 	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
-
-	void SetProgram(GLuint initProgram);
-	void SetMaterial(TextureData* textureData);
 
 	bool hasDiffuseTex();
 	bool hasBumpTex();
 	bool hasMaskTex();
+
+	void Draw();
 
 private:
 	GLuint program;
@@ -53,36 +64,12 @@ private:
 	GLuint indexbufferID;
 	size_t nIndices;
 
+	// Only used by textured models
 	GLuint diffuseID;
 	GLuint bumpID;
 	GLuint maskID;
 	GLuint texbufferID;
 };
 
-// ===== ModelLoader class =====
 
-class ModelLoader {
-protected:
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-
-	std::vector<Model*> models;
-	std::vector<TextureData*> textures;
-
-	GLuint simpleProgram, textureProgram, bumpProgram, errorProgram, maskProgram;
-
-	void AddModel(int id);
-
-	bool LoadModels(const char* path);
-	bool LoadTextures();
-
-	GLuint LoadTexture(const char* path);
-
-public:
-	ModelLoader() {}
-
-	bool Init(const char* path);
-	void Draw();
-};
-
-#endif // myDrawable_H
+#endif // MODEL_H

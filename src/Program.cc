@@ -31,7 +31,7 @@ Program::Program() {
 
 	// Set program parameters
 
-	cameraStartPos = glm::vec3(800.0, 200.0, 0.0);
+	cameraStartPos = glm::vec3(1800.0, 700.0, -50.0);
 	cameraFrustumFar = 5000.0f;
 }
 
@@ -108,16 +108,21 @@ bool Program::Init() {
 	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
 	if (!cam->Init()) return false;
 
+	// Load the sponza model
 	modelLoader = new ModelLoader();
 	if(!modelLoader->Init("resources/sponza.obj")) return false;
 
+	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
+	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
+	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, modelLoader->GetSkipNoTexturePtr(), " group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if (TwGetLastError() != NULL) return false;
 
+	// Activate depth test and blend for masking textures
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

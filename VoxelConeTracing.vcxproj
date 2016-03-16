@@ -256,7 +256,8 @@
     <ClCompile Include="src\Camera.cc" />
     <ClCompile Include="src\common\GL_utilities.cc" />
     <ClCompile Include="src\common\Windows\glew.c" />
-    <ClCompile Include="src\myDrawable.cc" />
+    <ClCompile Include="src\Model.cc" />
+    <ClCompile Include="src\ModelLoader.cc" />
     <ClCompile Include="src\Program.cc" />
   </ItemGroup>
   <ItemGroup>
@@ -267,7 +268,8 @@
     <ClInclude Include="src\common\tiny_obj_loader.h" />
     <ClInclude Include="src\common\Windows\glew.h" />
     <ClInclude Include="src\common\Windows\wglew.h" />
-    <ClInclude Include="src\myDrawable.h" />
+    <ClInclude Include="src\Model.h" />
+    <ClInclude Include="src\ModelLoader.h" />
     <ClInclude Include="src\Program.h" />
   </ItemGroup>
   <ItemGroup>

@@ -66,6 +66,7 @@ void Camera::SetFrustum() {
 	GLfloat height = (ratio > 1.0f) ? 1.0f / ratio : 1.0f;
 
 	param.VTPmatrix = glm::frustum(-width, width, -height, height, 1.0f, frustumFar);
+	//param.VTPmatrix = glm::ortho(-1200.0f, 1200.0f, -1200.0f, 1200.0f, 0.0f, 4000.0f);
 
 	needUpdate = true;
 }

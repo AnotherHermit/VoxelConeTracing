@@ -37,16 +37,19 @@ uniform sampler2D maskUnit;
 
 void main()
 {	
-	vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
-
+	// Set constant color for textured models
+	vec3 color = texture(diffuseUnit, exTexCoords).rgb;
+	
 	// Calculate diffuse light
 	vec3 light = mat3(cam.WTVmatrix) * vec3(0.707, 0.707, 0);
 	float shade = max(dot(normalize(exNormal), light), 0.1);
 
-	// Set constant color for textured models
-	color = texture(diffuseUnit, exTexCoords) * shade;
-	color.a = texture(maskUnit, exTexCoords).r;
+	// Apply light to texture
+	vec3 shadedColor = color * shade;
+
+	// Mask the texture color
+	float outAlpha = texture(maskUnit, exTexCoords).r;
 
 	// Output complete color
-	outColor =  color;
+	outColor = vec4(shadedColor, outAlpha);
 }

@@ -81,6 +81,7 @@ public:
 	GLfloat* GetRotSpeedPtr() { return &rspeed; }
 
 	TwType GetCameraTwType() { return cameraTwStruct; }
+	CameraParam* GetCameraInfo() { return &param; }
 };
 
 #endif // CAMERA_H
