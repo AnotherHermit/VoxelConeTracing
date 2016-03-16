@@ -15,6 +15,7 @@ void Model::SetMaterial(TextureData* textureData) {
 	bumpID = textureData->bumpID;
 	diffuseID = textureData->diffuseID;
 	maskID = textureData->maskID;
+	diffColor = textureData->diffColor;
 }
 
 void Model::SetProgram(GLuint initProgram) {
@@ -107,13 +108,15 @@ bool Model::hasMaskTex() {
 void Model::Draw() {
 	glUseProgram(program);
 	glBindVertexArray(vao);
+	
+	glEnable(GL_CULL_FACE);
 
 	// Bind the color texture
 	if(hasDiffuseTex()) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseID);
-
-		glEnable(GL_CULL_FACE);
+	} else {
+		glUniform3f(glGetUniformLocation(program, "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 	}
 
 	// Bind the masking texture

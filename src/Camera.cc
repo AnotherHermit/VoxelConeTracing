@@ -20,9 +20,9 @@ Camera::Camera(glm::vec3 startpos, GLint * screenWidth, GLint * screenHeight, GL
 	param.position = startpos;
 	yvec = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	mspeed = 500.0f;
+	mspeed = 10.0f;
 	rspeed = 0.001f;
-	phi = M_PI / 2.0f;
+	phi = 2 * M_PI / 2.0f;
 	theta = M_PI / 2.0f;
 
 	frustumFar = farInit;
@@ -66,7 +66,7 @@ void Camera::SetFrustum() {
 	GLfloat height = (ratio > 1.0f) ? 1.0f / ratio : 1.0f;
 
 	param.VTPmatrix = glm::frustum(-width, width, -height, height, 1.0f, frustumFar);
-	//param.VTPmatrix = glm::ortho(-1200.0f, 1200.0f, -1200.0f, 1200.0f, 0.0f, 4000.0f);
+	//param.VTPmatrix = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, 0.0f, 1.1f);
 
 	needUpdate = true;
 }

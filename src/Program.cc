@@ -30,9 +30,10 @@ Program::Program() {
 	time.startTimer();
 
 	// Set program parameters
-
-	cameraStartPos = glm::vec3(1800.0, 700.0, -50.0);
+	cameraStartPos = glm::vec3(0.0, 0.0, 2.0);
 	cameraFrustumFar = 5000.0f;
+
+	drawCornell = true;
 }
 
 int Program::Execute() {
@@ -109,21 +110,26 @@ bool Program::Init() {
 	if (!cam->Init()) return false;
 
 	// Load the sponza model
-	modelLoader = new ModelLoader();
-	if(!modelLoader->Init("resources/sponza.obj")) return false;
+	sponzaModel = new ModelLoader();
+	if(!sponzaModel->Init("resources/sponza.obj")) return false;
+
+	cornellModel = new ModelLoader();
+	if(!cornellModel->Init("resources/cornell.obj")) return false;
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, modelLoader->GetSkipNoTexturePtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponzaModel->GetSkipNoTexturePtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Cornell", TW_TYPE_BOOL8, &drawCornell, " group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if (TwGetLastError() != NULL) return false;
 
 	// Activate depth test and blend for masking textures
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -143,7 +149,11 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	modelLoader->Draw();
+	if(drawCornell) {
+		cornellModel->Draw();
+	} else {
+		sponzaModel->Draw();
+	}
 
 	TwDraw();
 

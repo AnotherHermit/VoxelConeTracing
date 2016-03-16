@@ -54,7 +54,9 @@ private:
 	TwBar *antBar;
 	
 	// Model
-	ModelLoader* modelLoader;
+	bool drawCornell;
+	ModelLoader* sponzaModel;
+	ModelLoader* cornellModel;
 
 	// Program params
 	glm::vec3 cameraStartPos;

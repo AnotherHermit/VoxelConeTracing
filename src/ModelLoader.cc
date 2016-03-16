@@ -19,7 +19,7 @@
 #include <iostream>
 
 ModelLoader::ModelLoader() {
-	skipNoTexture = true;
+	skipNoTexture = false;
 }
 
 void ModelLoader::SetSkipNoTexture(bool setValue) {
@@ -30,7 +30,6 @@ bool ModelLoader::Init(const char* path) {
 	if(!LoadModels(path)) return false;
 
 	if(!LoadTextures()) return false;
-
 	// Load shaders
 	GLint err;
 	simpleProgram = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
@@ -127,6 +126,8 @@ bool ModelLoader::LoadTextures() {
 				//return false;
 			}
 		}
+
+		data->diffColor = glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
 
 		textures.push_back(data);
 	}

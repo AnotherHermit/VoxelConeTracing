@@ -25,12 +25,15 @@
 #	endif
 #endif
 
+#include "glm.hpp"
+
 // ===== Texture Struct =====
 
 struct TextureData {
 	GLuint diffuseID;
 	GLuint bumpID;
 	GLuint maskID;
+	glm::vec3 diffColor;
 };
 
 // ===== Model Class =====
@@ -69,6 +72,9 @@ private:
 	GLuint bumpID;
 	GLuint maskID;
 	GLuint texbufferID;
+
+	//
+	glm::vec3 diffColor;
 };
 
 
