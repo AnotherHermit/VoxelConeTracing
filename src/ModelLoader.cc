@@ -20,17 +20,25 @@
 
 ModelLoader::ModelLoader() {
 	skipNoTexture = false;
+	param.view = 0;
 }
 
 void ModelLoader::SetSkipNoTexture(bool setValue) {
 	skipNoTexture = setValue;
 }
 
+void ModelLoader::SetDrawVoxels(bool enable) {
+	for(auto i = models.begin(); i != models.end(); i++) {
+		(*i)->SetVoxelDraw(enable);
+	}
+}
+
 bool ModelLoader::Init(const char* path) {
 	if(!LoadModels(path)) return false;
 
 	if(!LoadTextures()) return false;
-	// Load shaders
+
+	// Load shaders for drawing
 	GLint err;
 	simpleProgram = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
 	glGetProgramiv(simpleProgram, GL_LINK_STATUS, &err);
@@ -40,24 +48,11 @@ bool ModelLoader::Init(const char* path) {
 	glGetProgramiv(textureProgram, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
-	bumpProgram = loadShaders("src/shaders/bumpModel.vert", "src/shaders/bumpModel.frag");
-	glGetProgramiv(bumpProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
 	maskProgram = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
 	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
-	errorProgram = loadShaders("src/shaders/errorModel.vert", "src/shaders/errorModel.frag");
-	glGetProgramiv(errorProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	// Read all models
-	for(int i = 0; i < shapes.size(); i++) {
-		AddModel(i);
-	}
-
-	// Set constant uniforms
+	// Set constant uniforms for the drawing programs
 	glUseProgram(textureProgram);
 	glUniform1i(glGetUniformLocation(textureProgram, "diffuseUnit"), 0);
 
@@ -65,9 +60,29 @@ bool ModelLoader::Init(const char* path) {
 	glUniform1i(glGetUniformLocation(maskProgram, "diffuseUnit"), 0);
 	glUniform1i(glGetUniformLocation(maskProgram, "maskUnit"), 1);
 
-	//glUseProgram(bumpProgram);
-	//glUniform1i(glGetUniformLocation(bumpProgram, "diffuseUnit"), 0);
-	//glUniform1i(glGetUniformLocation(bumpProgram, "bumpUnit"), 2);
+	// Load shaders for voxelization
+	simpleVoxelProgram = loadShaders("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag");
+	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	textureVoxelProgram = loadShaders("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag");
+	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	// Set constant uniforms for voxel programs
+	glUseProgram(textureVoxelProgram);
+	glUniform1i(glGetUniformLocation(textureVoxelProgram, "diffuseUnit"), 0);
+
+	// Set non-constant uniforms for all programs
+	glGenBuffers(1, &modelLoaderBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, modelLoaderBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(ModelLoaderParam), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// Read all models
+	for(int i = 0; i < shapes.size(); i++) {
+		AddModel(i);
+	}
 
 	printError("init Model");
 	return true;
@@ -103,16 +118,6 @@ bool ModelLoader::LoadTextures() {
 				//return false;
 			}
 		}
-
-		// Load bump map if available
-		// TODO: Bumpmaps are in tangent space, would require additional preprocessing
-		data->bumpID = -1;
-		/*
-		startPath = "resources/";
-		if(!materials[i].bump_texname.empty()) {
-			data->bumpID = LoadTexture(startPath.append(materials[i].bump_texname).c_str());
-		}
-		*/
 
 		// Load texture mask if available
 		data->maskID = -1;
@@ -185,29 +190,30 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 
 void ModelLoader::AddModel(int id) {
 	Model* model = new Model();
-	GLuint setProgram;
+	GLuint setProgram, voxelProgram;
 
 	// Set material first since this determines shader program
 	model->SetMaterial(textures[shapes[id].mesh.material_ids[0]]);
 
 	// Select shader program based on textures available
-	if(model->hasBumpTex()) {
-		setProgram = bumpProgram;
-	} else if(model->hasMaskTex()) {
+	if(model->hasMaskTex()) {
 		setProgram = maskProgram;
+		voxelProgram = textureProgram;
 	} else if(model->hasDiffuseTex()) {
 		setProgram = textureProgram;
+		voxelProgram = textureProgram;
 	} else {
 		setProgram = simpleProgram;
+		voxelProgram = simpleVoxelProgram;
 	}
 
-	model->SetProgram(setProgram);
+	model->SetProgram(setProgram, voxelProgram);
 
 	// Load standard vertex data needed by all models, also creates VAO
 	model->SetStandardData(shapes[id].mesh.positions.size(), shapes[id].mesh.positions.data(),
 						   shapes[id].mesh.normals.size(), shapes[id].mesh.normals.data(),
 						   shapes[id].mesh.indices.size(), shapes[id].mesh.indices.data());
-	
+
 	// If a texture is available also load texture coordinate data
 	if(setProgram != simpleProgram) {
 		model->SetTextureData(shapes[id].mesh.texcoords.size(), shapes[id].mesh.texcoords.data());
@@ -222,6 +228,11 @@ void ModelLoader::AddModel(int id) {
 }
 
 void ModelLoader::Draw() {
+	// TODO: make this not update every draw call
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, modelLoaderBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(modelLoaderBuffer), &param);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	for(size_t i = 0; i < models.size(); i++) {
 
 		// Don't draw models without texture

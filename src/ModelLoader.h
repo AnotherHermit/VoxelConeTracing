@@ -5,12 +5,16 @@
 //
 ///////////////////////////////////////
 
-#ifndef myDrawable_H
-#define myDrawable_H
+#ifndef MODELLOADER_H
+#define MODELLOADER_H
 
 #include "tiny_obj_loader.h"
 
 #include "Model.h"
+
+struct ModelLoaderParam {
+	GLuint view;
+};
 
 // ===== ModelLoader class =====
 
@@ -22,9 +26,12 @@ private:
 	std::vector<Model*> models;
 	std::vector<TextureData*> textures;
 
-	GLuint simpleProgram, textureProgram, bumpProgram, errorProgram, maskProgram;
+	GLuint simpleProgram, textureProgram, maskProgram;
 	bool skipNoTexture;
-
+	ModelLoaderParam param;
+	GLuint modelLoaderBuffer;
+	
+	GLuint simpleVoxelProgram, textureVoxelProgram;
 
 	void AddModel(int id);
 
@@ -38,9 +45,11 @@ public:
 
 	void SetSkipNoTexture(bool setValue);
 	bool* GetSkipNoTexturePtr() { return &skipNoTexture; }
+	void SetDrawVoxels(bool enable);
+	GLuint* GetViewPtr() { return &param.view; }
 
 	bool Init(const char* path);
 	void Draw();
 };
 
-#endif // myDrawable_H
+#endif // MODELLOADER_H

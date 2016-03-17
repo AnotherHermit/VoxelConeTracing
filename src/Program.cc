@@ -34,10 +34,11 @@ Program::Program() {
 	cameraFrustumFar = 5000.0f;
 
 	drawCornell = true;
+	useOrtho = false;
 }
 
 int Program::Execute() {
-	if (!Init()) {
+	if(!Init()) {
 		std::cout << "\nInit failed. Press enter to quit ..." << std::endl;
 		getchar();
 		return -1;
@@ -45,9 +46,9 @@ int Program::Execute() {
 
 	SDL_Event Event;
 
-	while (isRunning) {
+	while(isRunning) {
 		timeUpdate();
-		while (SDL_PollEvent(&Event)) OnEvent(&Event);
+		while(SDL_PollEvent(&Event)) OnEvent(&Event);
 		CheckKeyDowns();
 		Update();
 		Render();
@@ -67,22 +68,22 @@ void Program::timeUpdate() {
 
 bool Program::Init() {
 	// SDL, glew and OpenGL init
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+	if(SDL_Init(SDL_INIT_VIDEO) != 0) {
 		std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
 		return false;
 	}
 	screen = SDL_CreateWindow("Voxel Cone Tracing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, winWidth, winHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-	if (screen == 0) {
+	if(screen == 0) {
 		std::cerr << "Failed to set Video Mode: " << SDL_GetError() << std::endl;
 		return false;
 	}
 
 	glcontext = SDL_GL_CreateContext(screen);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
-	
+
 #ifdef _WINDOWS
 	GLenum err = glewInit();
-	if (err != GLEW_OK) {
+	if(err != GLEW_OK) {
 		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
 		return false;
 	}
@@ -107,11 +108,15 @@ bool Program::Init() {
 
 	// Set up the camera
 	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
-	if (!cam->Init()) return false;
+	if(!cam->Init()) return false;
+
+	// Set up an Orthogaphic camera for voxelization
+	orthoCam = new OrthoCam(32);
+	if(!orthoCam->Init()) return false;
 
 	// Load the sponza model
-	sponzaModel = new ModelLoader();
-	if(!sponzaModel->Init("resources/sponza.obj")) return false;
+	//sponzaModel = new ModelLoader();
+	//if(!sponzaModel->Init("resources/sponza.obj")) return false;
 
 	cornellModel = new ModelLoader();
 	if(!cornellModel->Init("resources/cornell.obj")) return false;
@@ -121,11 +126,13 @@ bool Program::Init() {
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponzaModel->GetSkipNoTexturePtr(), " group=Controls ");
+	//TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponzaModel->GetSkipNoTexturePtr(), " group=Controls ");
 	TwAddVarRW(antBar, "Draw Cornell", TW_TYPE_BOOL8, &drawCornell, " group=Controls ");
+	TwAddVarRW(antBar, "Use Ortho", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
+	TwAddVarRW(antBar, "Select View", TW_TYPE_UINT32, cornellModel->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
-	if (TwGetLastError() != NULL) return false;
+	if(TwGetLastError() != NULL) return false;
 
 	// Activate depth test and blend for masking textures
 	glEnable(GL_DEPTH_TEST);
@@ -141,8 +148,12 @@ void Program::Update() {
 	UploadParams();
 
 	// Update the camera
-	cam->UpdateCamera();
-	
+	if(useOrtho) {
+		orthoCam->UploadParams();
+	} else {
+		cam->UpdateCamera();
+	}
+
 	printError("after update");
 }
 
@@ -179,67 +190,69 @@ void Program::UploadParams() {
 }
 
 void Program::OnEvent(SDL_Event *Event) {
-	switch (Event->type) {
-	case SDL_QUIT:
-		isRunning = false;
-		break;
-	case SDL_WINDOWEVENT:
-		switch (Event->window.event) {
-		case SDL_WINDOWEVENT_RESIZED:
-			SDL_SetWindowSize(screen, Event->window.data1, Event->window.data2);
-			SDL_GetWindowSize(screen, &winWidth, &winHeight);
-			glViewport(0, 0, winWidth, winHeight);
-			TwWindowSize(winWidth, winHeight);
-			cam->SetFrustum();
+	switch(Event->type) {
+		case SDL_QUIT:
+			isRunning = false;
 			break;
-		}
-	case SDL_KEYDOWN:
-		OnKeypress(Event);
-		break;
-	case SDL_MOUSEMOTION:
-		OnMouseMove(Event);
-		break;
-	case SDL_MOUSEBUTTONDOWN:
-		TwMouseButton(TW_MOUSE_PRESSED, TW_MOUSE_LEFT);
-		break;
-	case SDL_MOUSEBUTTONUP:
-		TwMouseButton(TW_MOUSE_RELEASED, TW_MOUSE_LEFT);
-		break;
-	default:
-		break;
+		case SDL_WINDOWEVENT:
+			switch(Event->window.event) {
+				case SDL_WINDOWEVENT_RESIZED:
+					SDL_SetWindowSize(screen, Event->window.data1, Event->window.data2);
+					SDL_GetWindowSize(screen, &winWidth, &winHeight);
+					glViewport(0, 0, winWidth, winHeight);
+					TwWindowSize(winWidth, winHeight);
+					cam->SetFrustum();
+					break;
+			}
+		case SDL_KEYDOWN:
+			OnKeypress(Event);
+			break;
+		case SDL_MOUSEMOTION:
+			OnMouseMove(Event);
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			TwMouseButton(TW_MOUSE_PRESSED, TW_MOUSE_LEFT);
+			break;
+		case SDL_MOUSEBUTTONUP:
+			TwMouseButton(TW_MOUSE_RELEASED, TW_MOUSE_LEFT);
+			break;
+		default:
+			break;
 	}
 }
 
 void Program::OnKeypress(SDL_Event *Event) {
 	TwKeyPressed(Event->key.keysym.sym, TW_KMOD_NONE);
-	switch (Event->key.keysym.sym) {
-	case SDLK_ESCAPE:
-		isRunning = false;
-		break;
-	case SDLK_SPACE:
-		break;
-	case SDLK_t:
-		break;
-	case SDLK_f:
-		cam->TogglePause();
-		SDL_SetRelativeMouseMode(SDL_GetRelativeMouseMode() ? SDL_FALSE : SDL_TRUE);
-		break;
-	case SDLK_g:
-		int isBarHidden;
-		TwGetParam(antBar, NULL, "iconified", TW_PARAM_INT32, 1, &isBarHidden);
-		if (isBarHidden) {
-			TwDefine(" Particles iconified=false ");
-		} else {
-			TwDefine(" Particles iconified=true ");
-		}
-		break;
-	default:
-		break;
+	switch(Event->key.keysym.sym) {
+		case SDLK_ESCAPE:
+			isRunning = false;
+			break;
+		case SDLK_SPACE:
+			useOrtho = !useOrtho;
+			cornellModel->SetDrawVoxels(useOrtho);
+			break;
+		case SDLK_t:
+			break;
+		case SDLK_f:
+			cam->TogglePause();
+			SDL_SetRelativeMouseMode(SDL_GetRelativeMouseMode() ? SDL_FALSE : SDL_TRUE);
+			break;
+		case SDLK_g:
+			int isBarHidden;
+			TwGetParam(antBar, NULL, "iconified", TW_PARAM_INT32, 1, &isBarHidden);
+			if(isBarHidden) {
+				TwDefine(" Particles iconified=false ");
+			} else {
+				TwDefine(" Particles iconified=true ");
+			}
+			break;
+		default:
+			break;
 	}
 }
 
 void Program::OnMouseMove(SDL_Event *Event) {
-	if (!SDL_GetRelativeMouseMode())
+	if(!SDL_GetRelativeMouseMode())
 		TwMouseMotion(Event->motion.x, Event->motion.y);
 	else
 		cam->RotateCamera(Event->motion.xrel, Event->motion.yrel);
@@ -247,22 +260,22 @@ void Program::OnMouseMove(SDL_Event *Event) {
 
 void Program::CheckKeyDowns() {
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-	if (keystate[SDL_SCANCODE_W]) {
+	if(keystate[SDL_SCANCODE_W]) {
 		cam->MoveForward(param.deltaT);
 	}
-	if (keystate[SDL_SCANCODE_S]) {
+	if(keystate[SDL_SCANCODE_S]) {
 		cam->MoveForward(-param.deltaT);
 	}
-	if (keystate[SDL_SCANCODE_A]) {
+	if(keystate[SDL_SCANCODE_A]) {
 		cam->MoveRight(-param.deltaT);
 	}
-	if (keystate[SDL_SCANCODE_D]) {
+	if(keystate[SDL_SCANCODE_D]) {
 		cam->MoveRight(param.deltaT);
 	}
-	if (keystate[SDL_SCANCODE_Q]) {
+	if(keystate[SDL_SCANCODE_Q]) {
 		cam->MoveUp(param.deltaT);
 	}
-	if (keystate[SDL_SCANCODE_E]) {
+	if(keystate[SDL_SCANCODE_E]) {
 		cam->MoveUp(-param.deltaT);
 	}
 }

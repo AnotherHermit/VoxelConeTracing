@@ -26,6 +26,7 @@
 #endif
 
 #include "Camera.h"
+#include "OrthoCam.h"
 #include "ModelLoader.h"
 
 #include "GL_utilities.h"
@@ -39,7 +40,7 @@ struct ProgramStruct {
 
 class Program {
 private:
-	SDL_Window *screen;
+	SDL_Window* screen;
 	SDL_GLContext glcontext;
 	GLint winWidth, winHeight;
 
@@ -50,8 +51,10 @@ private:
 	ProgramStruct param;
 	GLuint programBuffer;
 
-	Camera *cam;
-	TwBar *antBar;
+	OrthoCam* orthoCam;
+	bool useOrtho;
+	Camera* cam;
+	TwBar* antBar;
 	
 	// Model
 	bool drawCornell;

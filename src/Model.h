@@ -31,7 +31,6 @@
 
 struct TextureData {
 	GLuint diffuseID;
-	GLuint bumpID;
 	GLuint maskID;
 	glm::vec3 diffColor;
 };
@@ -43,7 +42,7 @@ public:
 	Model() {}
 
 	void SetMaterial(TextureData* textureData);
-	void SetProgram(GLuint initProgram);
+	void SetProgram(GLuint initProgram, GLuint initVoxelProgram);
 
 	void SetStandardData(size_t numVertices, GLfloat* verticeData,
 			  size_t numNormals, GLfloat* normalData,
@@ -54,14 +53,14 @@ public:
 	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
 
 	bool hasDiffuseTex();
-	bool hasBumpTex();
 	bool hasMaskTex();
 
 	void Draw();
+	void SetVoxelDraw(bool enable);
 
 private:
-	GLuint program;
-	GLuint vao;
+	GLuint drawProgram, voxelProgram, useProgram;
+	GLuint drawVAO, voxelVAO, useVAO;
 	GLuint vertexbufferID;
 	GLuint normalbufferID;
 	GLuint indexbufferID;
@@ -69,7 +68,6 @@ private:
 
 	// Only used by textured models
 	GLuint diffuseID;
-	GLuint bumpID;
 	GLuint maskID;
 	GLuint texbufferID;
 

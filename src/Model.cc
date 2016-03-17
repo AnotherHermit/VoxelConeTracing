@@ -12,14 +12,15 @@
 #include <iostream>
 
 void Model::SetMaterial(TextureData* textureData) {
-	bumpID = textureData->bumpID;
 	diffuseID = textureData->diffuseID;
 	maskID = textureData->maskID;
 	diffColor = textureData->diffColor;
 }
 
-void Model::SetProgram(GLuint initProgram) {
-	program = initProgram;
+void Model::SetProgram(GLuint initProgram, GLuint initVoxelProgram) {
+	drawProgram = initProgram;
+	voxelProgram = initVoxelProgram;
+	useProgram = drawProgram;
 }
 
 void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
@@ -29,7 +30,10 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	nIndices = numIndices;
 
 	// Create buffers
-	glGenVertexArrays(1, &vao);
+	glGenVertexArrays(1, &drawVAO);
+	glGenVertexArrays(1, &voxelVAO);
+	useVAO = drawVAO;
+
 	glGenBuffers(1, &vertexbufferID);
 	glGenBuffers(1, &normalbufferID);
 	glGenBuffers(1, &indexbufferID);
@@ -48,23 +52,42 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	// Set the GPU pointers for drawing 
-	glUseProgram(program);
-	glBindVertexArray(vao);
+	glUseProgram(drawProgram);
+	glBindVertexArray(drawVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
-	GLuint vPos = glGetAttribLocation(program, "inPosition");
+	GLuint vPos = glGetAttribLocation(drawProgram, "inPosition");
 	glEnableVertexAttribArray(vPos);
 	glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
-	GLuint vNorm = glGetAttribLocation(program, "inNormal");
+	GLuint vNorm = glGetAttribLocation(drawProgram, "inNormal");
+	glEnableVertexAttribArray(vNorm);
+	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	// Set the GPU pointers for voxelization
+	glUseProgram(voxelProgram);
+	glBindVertexArray(voxelVAO);
+
+	vNorm = glGetAttribLocation(voxelProgram, "inNormal");
 	glEnableVertexAttribArray(vNorm);
 	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
+	vPos = glGetAttribLocation(voxelProgram, "inPosition");
+	glEnableVertexAttribArray(vPos);
+	glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
+	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -79,22 +102,31 @@ void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numTexCoords, texCoordData, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glUseProgram(program);
-	glBindVertexArray(vao);
+	// Set the data pointer for the draw program
+	glUseProgram(drawProgram);
+	glBindVertexArray(drawVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, texbufferID);
-	GLuint vTex = glGetAttribLocation(program, "inTexCoords");
+
+	GLuint vTex = glGetAttribLocation(drawProgram, "inTexCoords");
 	glEnableVertexAttribArray(vTex);
 	glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0);
 
-	printError("Set texture data");
-}
+	// Set the data pointer for the voxel program
+	glUseProgram(voxelProgram);
+	glBindVertexArray(voxelVAO);
 
-bool Model::hasBumpTex() {
-	return bumpID != -1;
+	vTex = glGetAttribLocation(voxelProgram, "inTexCoords");
+	glEnableVertexAttribArray(vTex);
+	glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+
+	printError("Set texture data");
 }
 
 bool Model::hasDiffuseTex() {
@@ -106,8 +138,8 @@ bool Model::hasMaskTex() {
 }
 
 void Model::Draw() {
-	glUseProgram(program);
-	glBindVertexArray(vao);
+	glUseProgram(useProgram);
+	glBindVertexArray(useVAO);
 	
 	glEnable(GL_CULL_FACE);
 
@@ -116,7 +148,7 @@ void Model::Draw() {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseID);
 	} else {
-		glUniform3f(glGetUniformLocation(program, "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+		glUniform3f(glGetUniformLocation(useProgram, "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 	}
 
 	// Bind the masking texture
@@ -132,4 +164,14 @@ void Model::Draw() {
 	glBindVertexArray(0);
 
 	printError("Draw Model");
+}
+
+void Model::SetVoxelDraw(bool enable) {
+	if(enable) {
+		useProgram = voxelProgram;
+		useVAO = voxelVAO;
+	} else {
+		useProgram = drawProgram;
+		useVAO = drawVAO;
+	}
 }

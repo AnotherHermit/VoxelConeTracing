@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Shaders\Drawing">
       <UniqueIdentifier>{d50d27cf-b6e7-4ac7-9703-8739aeab810a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Shaders\Voxelization">
+      <UniqueIdentifier>{559ac126-7178-46c3-93a8-d6d94ed6009a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\common\Windows\glew.c">
@@ -52,6 +55,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ModelLoader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OrthoCam.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,6 +92,9 @@
     <ClInclude Include="src\ModelLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\OrthoCam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\simpleModel.vert">
@@ -94,22 +103,10 @@
     <None Include="src\shaders\simpleModel.frag">
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
-    <None Include="src\shaders\bumpModel.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\bumpModel.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
-    </None>
     <None Include="src\shaders\textureModel.frag">
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\textureModel.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\errorModel.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\errorModel.vert">
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\maskModel.frag">
@@ -117,6 +114,18 @@
     </None>
     <None Include="src\shaders\maskModel.vert">
       <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\voxelizationSimple.frag">
+      <Filter>Source Files\Shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\voxelizationSimple.vert">
+      <Filter>Source Files\Shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\voxelizationTexture.frag">
+      <Filter>Source Files\Shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\voxelizationTexture.vert">
+      <Filter>Source Files\Shaders\Voxelization</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -33,16 +33,15 @@ Camera::Camera(glm::vec3 startpos, GLint * screenWidth, GLint * screenHeight, GL
 	SetFrustum();
 	Update();
 
-	cameraTwMembers[0] = {"Cam Pos x", TW_TYPE_FLOAT, offsetof(CameraParam, position.x), " readonly=true group=Info "};
-	cameraTwMembers[1] = {"Cam Pos y", TW_TYPE_FLOAT, offsetof(CameraParam, position.y), " readonly=true group=Info "};
-	cameraTwMembers[2] = {"Cam Pos z", TW_TYPE_FLOAT, offsetof(CameraParam, position.z), " readonly=true group=Info "};
+	cameraTwMembers[0] = { "Cam Pos x", TW_TYPE_FLOAT, offsetof(CameraParam, position.x), " readonly=true group=Info " };
+	cameraTwMembers[1] = { "Cam Pos y", TW_TYPE_FLOAT, offsetof(CameraParam, position.y), " readonly=true group=Info " };
+	cameraTwMembers[2] = { "Cam Pos z", TW_TYPE_FLOAT, offsetof(CameraParam, position.z), " readonly=true group=Info " };
 	cameraTwStruct = TwDefineStruct("Camera", cameraTwMembers, 3, sizeof(CameraParam), NULL, NULL);
 }
 
 bool Camera::Init() {
 	glGenBuffers(1, &cameraBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 10, cameraBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, cameraBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraParam), NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -66,7 +65,6 @@ void Camera::SetFrustum() {
 	GLfloat height = (ratio > 1.0f) ? 1.0f / ratio : 1.0f;
 
 	param.VTPmatrix = glm::frustum(-width, width, -height, height, 1.0f, frustumFar);
-	//param.VTPmatrix = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, 0.0f, 1.1f);
 
 	needUpdate = true;
 }
@@ -84,40 +82,40 @@ void Camera::Update() {
 }
 
 void Camera::UploadParams() {
-	glBindBuffer(GL_UNIFORM_BUFFER, cameraBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 10, cameraBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(CameraParam), &param);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void Camera::UpdateCamera() {
-	if (needUpdate) {
+	if(needUpdate) {
 		Update();
 		UploadParams();
 	}
-	needUpdate = false;
+	needUpdate = true; // Should be false later
 }
 
 void Camera::MoveForward(GLfloat deltaT) {
-	if (!isPaused) {
+	if(!isPaused) {
 		param.position += heading * mspeed * deltaT;
 		needUpdate = true;
 	}
 }
 void Camera::MoveRight(GLfloat deltaT) {
-	if (!isPaused) {
+	if(!isPaused) {
 		param.position += side * mspeed * deltaT;
 		needUpdate = true;
 	}
 }
 void Camera::MoveUp(GLfloat deltaT) {
-	if (!isPaused) {
+	if(!isPaused) {
 		param.position += up * mspeed * deltaT;
 		needUpdate = true;
 	}
 }
 
 void Camera::RotateCamera(GLint dx, GLint dy) {
-	if (!isPaused) {
+	if(!isPaused) {
 		float eps = 0.001f;
 
 		phi += rspeed * dx;
