@@ -61,7 +61,7 @@ bool ModelLoader::Init(const char* path) {
 	glUniform1i(glGetUniformLocation(maskProgram, "maskUnit"), 1);
 
 	// Load shaders for voxelization
-	simpleVoxelProgram = loadShaders("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag");
+	simpleVoxelProgram = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
 	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 

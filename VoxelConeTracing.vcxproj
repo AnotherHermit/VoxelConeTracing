@@ -282,6 +282,7 @@
     <None Include="src\shaders\textureModel.frag" />
     <None Include="src\shaders\textureModel.vert" />
     <None Include="src\shaders\voxelizationSimple.frag" />
+    <None Include="src\shaders\voxelizationSimple.geom" />
     <None Include="src\shaders\voxelizationSimple.vert" />
     <None Include="src\shaders\voxelizationTexture.frag" />
     <None Include="src\shaders\voxelizationTexture.vert" />

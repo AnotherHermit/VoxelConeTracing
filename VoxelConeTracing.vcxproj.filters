@@ -127,5 +127,8 @@
     <None Include="src\shaders\voxelizationTexture.vert">
       <Filter>Source Files\Shaders\Voxelization</Filter>
     </None>
+    <None Include="src\shaders\voxelizationSimple.geom">
+      <Filter>Source Files\Shaders\Voxelization</Filter>
+    </None>
   </ItemGroup>
 </Project>

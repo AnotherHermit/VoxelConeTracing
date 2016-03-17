@@ -75,16 +75,16 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glUseProgram(voxelProgram);
 	glBindVertexArray(voxelVAO);
 
-	vNorm = glGetAttribLocation(voxelProgram, "inNormal");
-	glEnableVertexAttribArray(vNorm);
-	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
 	vPos = glGetAttribLocation(voxelProgram, "inPosition");
 	glEnableVertexAttribArray(vPos);
 	glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
+	vNorm = glGetAttribLocation(voxelProgram, "inNormal");
+	glEnableVertexAttribArray(vNorm);
+	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
 	
