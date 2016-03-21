@@ -27,7 +27,7 @@
 
 #include "Camera.h"
 #include "OrthoCam.h"
-#include "ModelLoader.h"
+#include "Scene.h"
 
 #include "GL_utilities.h"
 
@@ -56,10 +56,12 @@ private:
 	Camera* cam;
 	TwBar* antBar;
 	
+	// Shaders
+	ShaderList shaders;
+
 	// Model
-	bool drawCornell;
-	ModelLoader* sponzaModel;
-	ModelLoader* cornellModel;
+	GLuint sceneSelect;
+	std::vector<Scene*> scenes;
 
 	// Program params
 	glm::vec3 cameraStartPos;

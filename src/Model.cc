@@ -51,6 +51,8 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * numIndices, indexData, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	printError("Set standard model data init");
+
 	// Set the GPU pointers for drawing 
 	glUseProgram(drawProgram);
 	glBindVertexArray(drawVAO);
@@ -70,6 +72,8 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	printError("Set standard model data draw");
 
 	// Set the GPU pointers for voxelization
 	glUseProgram(voxelProgram);
@@ -91,7 +95,7 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	printError("Set standard model data");
+	printError("Set standard model data voxel");
 }
 
 void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
@@ -138,40 +142,8 @@ bool Model::hasMaskTex() {
 }
 
 void Model::Draw() {
-	glUseProgram(useProgram);
-	glBindVertexArray(useVAO);
-	
-	glEnable(GL_CULL_FACE);
-
-	// Bind the color texture
-	if(hasDiffuseTex()) {
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseID);
-	} else {
-		glUniform3f(glGetUniformLocation(useProgram, "diffColor"), diffColor.r, diffColor.g, diffColor.b);
-	}
-
-	// Bind the masking texture
-	if(hasMaskTex()) {
-		glDisable(GL_CULL_FACE);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, maskID);
-	}
-
 	// Draw
 	glDrawElements(GL_TRIANGLES, (GLsizei)nIndices, GL_UNSIGNED_INT, 0L);
-	glBindVertexArray(0);
 
 	printError("Draw Model");
-}
-
-void Model::SetVoxelDraw(bool enable) {
-	if(enable) {
-		useProgram = voxelProgram;
-		useVAO = voxelVAO;
-	} else {
-		useProgram = drawProgram;
-		useVAO = drawVAO;
-	}
 }

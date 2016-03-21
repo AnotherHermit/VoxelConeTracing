@@ -260,6 +260,7 @@
     <ClCompile Include="src\ModelLoader.cc" />
     <ClCompile Include="src\OrthoCam.cc" />
     <ClCompile Include="src\Program.cc" />
+    <ClCompile Include="src\Scene.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Camera.h" />
@@ -273,6 +274,7 @@
     <ClInclude Include="src\ModelLoader.h" />
     <ClInclude Include="src\OrthoCam.h" />
     <ClInclude Include="src\Program.h" />
+    <ClInclude Include="src\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\maskModel.frag" />
@@ -285,6 +287,7 @@
     <None Include="src\shaders\voxelizationSimple.geom" />
     <None Include="src\shaders\voxelizationSimple.vert" />
     <None Include="src\shaders\voxelizationTexture.frag" />
+    <None Include="src\shaders\voxelizationTexture.geom" />
     <None Include="src\shaders\voxelizationTexture.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

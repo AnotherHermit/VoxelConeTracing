@@ -18,71 +18,21 @@
 
 #include <iostream>
 
-ModelLoader::ModelLoader() {
-	skipNoTexture = false;
-	param.view = 0;
-}
+bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex) {
+	shaders = initShaders;
+	maxVertex = *outMaxVertex;
+	minVertex = *outMinVertex;
+	models = outModels;
 
-void ModelLoader::SetSkipNoTexture(bool setValue) {
-	skipNoTexture = setValue;
-}
-
-void ModelLoader::SetDrawVoxels(bool enable) {
-	for(auto i = models.begin(); i != models.end(); i++) {
-		(*i)->SetVoxelDraw(enable);
-	}
-}
-
-bool ModelLoader::Init(const char* path) {
 	if(!LoadModels(path)) return false;
 
 	if(!LoadTextures()) return false;
 
-	// Load shaders for drawing
-	GLint err;
-	simpleProgram = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
-	glGetProgramiv(simpleProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	textureProgram = loadShaders("src/shaders/textureModel.vert", "src/shaders/textureModel.frag");
-	glGetProgramiv(textureProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	maskProgram = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
-	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	// Set constant uniforms for the drawing programs
-	glUseProgram(textureProgram);
-	glUniform1i(glGetUniformLocation(textureProgram, "diffuseUnit"), 0);
-
-	glUseProgram(maskProgram);
-	glUniform1i(glGetUniformLocation(maskProgram, "diffuseUnit"), 0);
-	glUniform1i(glGetUniformLocation(maskProgram, "maskUnit"), 1);
-
-	// Load shaders for voxelization
-	simpleVoxelProgram = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
-	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	textureVoxelProgram = loadShaders("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag");
-	glGetProgramiv(maskProgram, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	// Set constant uniforms for voxel programs
-	glUseProgram(textureVoxelProgram);
-	glUniform1i(glGetUniformLocation(textureVoxelProgram, "diffuseUnit"), 0);
-
-	// Set non-constant uniforms for all programs
-	glGenBuffers(1, &modelLoaderBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, modelLoaderBuffer);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(ModelLoaderParam), NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 	// Read all models
-	for(int i = 0; i < shapes.size(); i++) {
-		AddModel(i);
-	}
+	AddModels();
+
+	*outMaxVertex = maxVertex;
+	*outMinVertex = minVertex;
 
 	printError("init Model");
 	return true;
@@ -105,7 +55,7 @@ bool ModelLoader::LoadTextures() {
 
 	for(size_t i = 0; i < materials.size(); i++) {
 		TextureData* data = new TextureData;
-
+		
 		// Load color texture of available
 		data->diffuseID = -1;
 		startPath = "resources/";
@@ -172,7 +122,7 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 			break;
 
 		default:
-			std::cerr << "Bpp is in unknown format...\n";
+			std::cerr << "Bpp is in unknown format\n";
 			return -1;
 	}
 	glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, textureData);
@@ -188,59 +138,54 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 	return texID;
 }
 
-void ModelLoader::AddModel(int id) {
-	Model* model = new Model();
-	GLuint setProgram, voxelProgram;
+void ModelLoader::AddModels() {
+	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
 
-	// Set material first since this determines shader program
-	model->SetMaterial(textures[shapes[id].mesh.material_ids[0]]);
+		// Check vertex data for min and max corners
+		for(auto vertex = shape->mesh.positions.begin(); vertex != shape->mesh.positions.end()-3; vertex+=3) {
+			glm::vec3 currentVertex = glm::vec3(vertex[0], vertex[1], vertex[2]);
+			
+			if(maxVertex == nullptr) {
+				maxVertex = new glm::vec3(currentVertex);
+			} else {
+				*maxVertex = glm::max(currentVertex, *maxVertex);
+			}
 
-	// Select shader program based on textures available
-	if(model->hasMaskTex()) {
-		setProgram = maskProgram;
-		voxelProgram = textureProgram;
-	} else if(model->hasDiffuseTex()) {
-		setProgram = textureProgram;
-		voxelProgram = textureProgram;
-	} else {
-		setProgram = simpleProgram;
-		voxelProgram = simpleVoxelProgram;
-	}
-
-	model->SetProgram(setProgram, voxelProgram);
-
-	// Load standard vertex data needed by all models, also creates VAO
-	model->SetStandardData(shapes[id].mesh.positions.size(), shapes[id].mesh.positions.data(),
-						   shapes[id].mesh.normals.size(), shapes[id].mesh.normals.data(),
-						   shapes[id].mesh.indices.size(), shapes[id].mesh.indices.data());
-
-	// If a texture is available also load texture coordinate data
-	if(setProgram != simpleProgram) {
-		model->SetTextureData(shapes[id].mesh.texcoords.size(), shapes[id].mesh.texcoords.data());
-	}
-
-	// Sort masked models last in the drawing list since they are transparent
-	if(setProgram == maskProgram) {
-		models.push_back(model);
-	} else {
-		models.insert(models.begin(), model);
-	}
-}
-
-void ModelLoader::Draw() {
-	// TODO: make this not update every draw call
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, modelLoaderBuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(modelLoaderBuffer), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	for(size_t i = 0; i < models.size(); i++) {
-
-		// Don't draw models without texture
-		if(skipNoTexture && !models[i]->hasDiffuseTex()) {
-			continue;
+			if(minVertex == nullptr) {
+				minVertex = new glm::vec3(currentVertex);
+			} else {
+				*minVertex = glm::min(currentVertex, *minVertex);
+			}
 		}
 
-		models[i]->Draw();
+		Model* model = new Model();
+
+		// Set material first since this determines shader program
+		model->SetMaterial(textures[shape->mesh.material_ids[0]]);
+
+		if(model->hasMaskTex()) {
+			model->SetProgram(shaders->mask, shaders->voxelTexture);
+		} else if(model->hasDiffuseTex()) {
+			model->SetProgram(shaders->texture, shaders->voxelTexture);
+		} else {
+			model->SetProgram(shaders->simple, shaders->voxel);
+		}
+
+		// Load standard vertex data needed by all models, also creates VAO
+		model->SetStandardData(shape->mesh.positions.size(), shape->mesh.positions.data(),
+							   shape->mesh.normals.size(), shape->mesh.normals.data(),
+							   shape->mesh.indices.size(), shape->mesh.indices.data());
+
+		// If a texture is available also load texture coordinate data
+		if(model->hasDiffuseTex()) {
+			model->SetTextureData(shape->mesh.texcoords.size(), shape->mesh.texcoords.data());
+		}
+		
+		// Sort masked models last in the drawing list since they are transparent
+		if(model->hasMaskTex()) {
+			models->push_back(model);
+		} else {
+			models->insert(models->begin(), model);
+		}
 	}
-	printError("Draw Models");
 }

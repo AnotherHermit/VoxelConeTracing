@@ -57,6 +57,13 @@ public:
 
 	void Draw();
 	void SetVoxelDraw(bool enable);
+	GLuint GetDrawProgram() { return drawProgram; }
+	GLuint GetVoxelProgram() { return voxelProgram; }
+	GLuint GetDrawVAO() { return drawVAO; }
+	GLuint GetVoxelVAO() { return voxelVAO; }
+	GLuint GetDiffuseID() { return diffuseID; }
+	GLuint GetMaskID() { return maskID; }
+	glm::vec3 GetDiffColor() { return diffColor; }
 
 private:
 	GLuint drawProgram, voxelProgram, useProgram;

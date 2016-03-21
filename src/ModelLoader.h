@@ -12,9 +12,7 @@
 
 #include "Model.h"
 
-struct ModelLoaderParam {
-	GLuint view;
-};
+#include "GL_utilities.h"
 
 // ===== ModelLoader class =====
 
@@ -23,17 +21,14 @@ private:
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 
-	std::vector<Model*> models;
+	std::vector<Model*>* models;
 	std::vector<TextureData*> textures;
 
-	GLuint simpleProgram, textureProgram, maskProgram;
-	bool skipNoTexture;
-	ModelLoaderParam param;
-	GLuint modelLoaderBuffer;
-	
-	GLuint simpleVoxelProgram, textureVoxelProgram;
+	ShaderList* shaders;
 
-	void AddModel(int id);
+	glm::vec3 *maxVertex, *minVertex;
+
+	void AddModels();
 
 	bool LoadModels(const char* path);
 	bool LoadTextures();
@@ -41,15 +36,9 @@ private:
 	GLuint LoadTexture(const char* path);
 
 public:
-	ModelLoader();
+	ModelLoader() {};
 
-	void SetSkipNoTexture(bool setValue);
-	bool* GetSkipNoTexturePtr() { return &skipNoTexture; }
-	void SetDrawVoxels(bool enable);
-	GLuint* GetViewPtr() { return &param.view; }
-
-	bool Init(const char* path);
-	void Draw();
+	bool LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex);
 };
 
 #endif // MODELLOADER_H

@@ -16,7 +16,7 @@ uniform vec3 diffColor;
 void main()
 {	
 	// Set constant color for textureless models
-	vec3 color = domDir; //diffColor;
+	vec3 color = domDir;// diffColor;
 
 	
 	// Output complete color

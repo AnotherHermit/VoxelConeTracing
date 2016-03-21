@@ -33,7 +33,7 @@ Program::Program() {
 	cameraStartPos = glm::vec3(0.0, 0.0, 2.0);
 	cameraFrustumFar = 5000.0f;
 
-	drawCornell = true;
+	sceneSelect = 0;
 	useOrtho = false;
 }
 
@@ -82,9 +82,9 @@ bool Program::Init() {
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 #ifdef _WINDOWS
-	GLenum err = glewInit();
-	if(err != GLEW_OK) {
-		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
+	GLenum glewErr = glewInit();
+	if(glewErr != GLEW_OK) {
+		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glewErr) << std::endl;
 		return false;
 	}
 #endif
@@ -98,6 +98,32 @@ bool Program::Init() {
 	glBindBuffer(GL_UNIFORM_BUFFER, programBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ProgramStruct), &param, GL_STREAM_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+	// Load shaders for drawing
+	GLint err;
+	shaders.simple = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
+	glGetProgramiv(shaders.simple, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	shaders.texture = loadShaders("src/shaders/textureModel.vert", "src/shaders/textureModel.frag");
+	glGetProgramiv(shaders.texture, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	shaders.mask = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
+	glGetProgramiv(shaders.mask, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	// Load shaders for voxelization
+	shaders.voxel = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
+	glGetProgramiv(shaders.voxel, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	shaders.voxelTexture = loadShadersG("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag", "src/shaders/voxelizationTexture.geom");
+	glGetProgramiv(shaders.voxelTexture, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	printError("after shader load");
 
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -114,22 +140,26 @@ bool Program::Init() {
 	orthoCam = new OrthoCam(32);
 	if(!orthoCam->Init()) return false;
 
-	// Load the sponza model
-	sponzaModel = new ModelLoader();
-	if(!sponzaModel->Init("resources/sponza.obj")) return false;
+	// Load scenes
+	Scene* cornell = new Scene();
+	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
+	scenes.push_back(cornell);
 
-	cornellModel = new ModelLoader();
-	if(!cornellModel->Init("resources/cornell.obj")) return false;
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	scenes.push_back(sponza);
+
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponzaModel->GetSkipNoTexturePtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Cornell", TW_TYPE_BOOL8, &drawCornell, " group=Controls ");
+	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
 	TwAddVarRO(antBar, "Use Ortho", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
-	TwAddVarRW(antBar, "Select View", TW_TYPE_UINT32, cornellModel->GetViewPtr(), " min=0 max=2 group=Controls ");
+	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
+	TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -160,11 +190,7 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if(drawCornell) {
-		cornellModel->Draw();
-	} else {
-		sponzaModel->Draw();
-	}
+	scenes[sceneSelect]->Draw();
 
 	TwDraw();
 
@@ -229,7 +255,7 @@ void Program::OnKeypress(SDL_Event *Event) {
 			break;
 		case SDLK_SPACE:
 			useOrtho = !useOrtho;
-			cornellModel->SetDrawVoxels(useOrtho);
+			scenes[sceneSelect]->SetDrawVoxels(useOrtho);
 			break;
 		case SDLK_t:
 			break;

@@ -17,7 +17,8 @@ struct OrthoCam {
 	mat4 VTPmatrix;
 };
 
-struct LoaderParams {
+struct SceneParams {
+	mat4 MTOmatrix;
 	uint view;
 };
 
@@ -25,13 +26,13 @@ layout (std140, binding = 10) uniform OrthoCamBuffer {
 	OrthoCam cam;
 };
 
-layout (std140, binding = 11) uniform ModelLoaderBuffer {
-	LoaderParams loader;
+layout (std140, binding = 11) uniform SceneBuffer {
+	SceneParams scene;
 };
 
 void main(void)
 {
 	exNormal = inNormal;
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix[loader.view] * vec4(inPosition, 1.0f);
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix[scene.view] * scene.MTOmatrix * vec4(inPosition, 1.0f);
 }
 
