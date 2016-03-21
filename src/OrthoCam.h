@@ -42,7 +42,7 @@ struct OrthoCamParam {
 class OrthoCam {
 private:
 	glm::vec3 zeroVec, xVec, yVec, zVec;
-
+	
 	GLuint orthoCamBuffer;
 	GLint voxelRes;
 

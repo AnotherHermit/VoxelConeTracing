@@ -79,12 +79,12 @@ void Scene::Draw() {
 		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
-
+		
 		if(drawVoxels) {
 			activeProgram = (*model)->GetVoxelProgram();
 			glBindVertexArray((*model)->GetVoxelVAO());
-			//glDisable(GL_CULL_FACE);
-			glEnable(GL_CULL_FACE);
+
+			glDisable(GL_CULL_FACE);
 		} else {
 			activeProgram = (*model)->GetDrawProgram();
 			glBindVertexArray((*model)->GetDrawVAO());
@@ -105,12 +105,11 @@ void Scene::Draw() {
 
 		// Bind the masking texture
 		if((*model)->hasMaskTex()) {
-			//glDisable(GL_CULL_FACE);
+			glDisable(GL_CULL_FACE);
 
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetMaskID());
 		}
-
 
 		(*model)->Draw();
 	}
