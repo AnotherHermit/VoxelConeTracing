@@ -123,6 +123,11 @@ bool Program::Init() {
 	glGetProgramiv(shaders.voxelTexture, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
+	// Single triangle shader for deferred shading etc.
+	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
+	glGetProgramiv(shaders.singleTriangle, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
 	printError("after shader load");
 
 	// Set up the AntBar

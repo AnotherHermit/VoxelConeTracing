@@ -139,5 +139,11 @@
     <None Include="src\shaders\voxelizationTexture.geom">
       <Filter>Source Files\Shaders\Voxelization</Filter>
     </None>
+    <None Include="src\shaders\singleTriangle.frag">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\singleTriangle.vert">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
   </ItemGroup>
 </Project>
