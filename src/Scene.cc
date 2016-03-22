@@ -39,8 +39,8 @@ bool Scene::Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes)
 	// Init the framebuffer for drawing
 	glGenFramebuffers(1, &voxelFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelFBO);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Set constant uniforms for the drawing programs
@@ -81,6 +81,16 @@ bool Scene::Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes)
 	param.MTOmatrix = glm::scale(glm::vec3(2.0f / scale)) * glm::translate(-centerVertex);
 
 	printError("init Scene");
+
+	//=========================
+
+	tempTex = modelLoader.LoadTexture("resources/textures/lion.tga");
+
+
+	//=============
+
+
+
 	return true;
 }
 
@@ -89,16 +99,23 @@ void Scene::GenViewTexture(GLuint* viewID) {
 	glBindTexture(GL_TEXTURE_2D, *viewID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, voxelRes, voxelRes, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, voxelRes, voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
 }
 
 void Scene::Voxelize() {
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
 
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelFBO);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelFBO);
+	glViewport(0, 0, voxelRes, voxelRes);
+	glEnable(GL_CULL_FACE);
 
-	for(auto model = models->begin(); model != models->end(); model++) {
+	int test = 7;
+
+	glClearTexImage(frontTex, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	for(auto model = models->begin(); model != models->begin()+2; model++) {
 
 		// Don't draw models without texture
 		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
@@ -106,6 +123,7 @@ void Scene::Voxelize() {
 		}
 
 		glUseProgram((*model)->GetVoxelProgram());
+		glBindVertexArray((*model)->GetVoxelVAO());
 
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
@@ -116,18 +134,27 @@ void Scene::Voxelize() {
 			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 		}
 
-		glBindImageTexture(0, frontTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI);
-
+		glBindImageTexture(0, frontTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		
 		(*model)->Draw();
+
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, 800, 800);
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 	printError("Voxelize");
+
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(shaders->singleTriangle);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, frontTex);
 
-	glUseProgram(shaders->singleTriangle);
+
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), 0);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	printError("Draw Voxels");
@@ -145,7 +172,6 @@ void Scene::Draw() {
 	}
 
 	GLuint activeProgram;
-
 	for(auto model = models->begin(); model != models->end(); model++) {
 		
 		// Don't draw models without texture

@@ -33,12 +33,12 @@ private:
 	bool LoadModels(const char* path);
 	bool LoadTextures();
 
-	GLuint LoadTexture(const char* path);
 
 public:
 	ModelLoader() {};
 
 	bool LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex);
+	GLuint LoadTexture(const char* path);
 };
 
 #endif // MODELLOADER_H

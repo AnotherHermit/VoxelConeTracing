@@ -12,33 +12,24 @@ layout(triangle_strip, max_vertices = 3) out;
 
 in vec3 exNormal[3];
 
-flat out uint domDir;
-
-struct OrthoCam {
-	mat4 WTVmatrix[3];
-	mat4 VTPmatrix;
-};
-
-layout (std140, binding = 10) uniform OrthoCamBuffer {
-	OrthoCam cam;
-};
+//out vec3 domDir;
 
 void main()
 {
-	vec3 dir = abs(exNormal[0]);
-	float maxComponent = max(dir.x, max(dir.y, dir.z));
-	uint tempDir = maxComponent == dir.x ? 0 : maxComponent == dir.y ? 1 : 2;
+	//vec3 dir = abs(exNormal[0]);
+	//float maxComponent = max(dir.x, max(dir.y, dir.z));
+	//dir = maxComponent == dir.x ? vec3(1.0f, 0.0f, 0.0f) : maxComponent == dir.y ? vec3(0.0f, 1.0f, 0.0f) : vec3(0.0f, 0.0f, 1.0f);
 
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix[tempDir] * gl_in[0].gl_Position;
-	domDir = tempDir;
+	gl_Position = gl_in[0].gl_Position;
+	//domDir = dir;
 	EmitVertex();
 	
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix[tempDir] * gl_in[1].gl_Position;
-	domDir = tempDir;
+	gl_Position = gl_in[1].gl_Position;
+	//domDir = dir;
 	EmitVertex();
 
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix[tempDir] * gl_in[2].gl_Position;
-	domDir = tempDir;
+	gl_Position = gl_in[2].gl_Position;
+	//domDir = dir;
 	EmitVertex();
 
 	EndPrimitive();

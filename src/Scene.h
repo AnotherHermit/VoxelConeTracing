@@ -42,6 +42,7 @@ private:
 	// Voxel 2D view textures
 	GLuint frontTex, sideTex, topTex;
 	GLuint voxelRes;
+	GLuint tempTex;
 	
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;

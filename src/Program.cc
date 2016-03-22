@@ -147,12 +147,13 @@ bool Program::Init() {
 
 	// Load scenes
 	Scene* cornell = new Scene();
-	if(!cornell->Init("resources/cornell.obj", &shaders,32)) return false;
+	if(!cornell->Init("resources/cornell.obj", &shaders, 32)) return false;
 	scenes.push_back(cornell);
-
+	/*
 	Scene* sponza = new Scene();
 	if(!sponza->Init("resources/sponza.obj", &shaders,32)) return false;
 	scenes.push_back(sponza);
+	*/
 
 
 	// Add information to the antbar
@@ -160,11 +161,11 @@ bool Program::Init() {
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
+	//TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
 	TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
 	TwAddVarRO(antBar, "Use Ortho", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
 	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
-	TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
+	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
