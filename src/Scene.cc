@@ -11,6 +11,7 @@
 
 #include "GL_utilities.h"
 #include "glm\gtx\transform.hpp"
+#include "glm\gtc\constants.hpp"
 
 #include <iostream>
 
@@ -27,10 +28,10 @@ void Scene::SetSkipNoTexture(bool setValue) {
 	skipNoTexture = setValue;
 }
 
-bool Scene::Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes) {
+bool Scene::Init(const char* path, ShaderList* initShaders) {
 	
 	shaders = initShaders;
-	voxelRes = initVoxelRes;
+	voxelRes = 64;
 
 	GenViewTexture(&frontTex);
 	GenViewTexture(&sideTex);
@@ -77,19 +78,12 @@ bool Scene::Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes)
 	glm::vec3 diffVector = (*maxVertex - *minVertex);
 	centerVertex = diffVector / 2.0f + *minVertex;
 	scale = glm::max(diffVector.x, glm::max(diffVector.y, diffVector.z));
-
-	param.MTOmatrix = glm::scale(glm::vec3(2.0f / scale)) * glm::translate(-centerVertex);
+	
+	param.MTOmatrix[0] = glm::scale(glm::vec3(2.0f / scale)) * glm::translate(-centerVertex);
+	param.MTOmatrix[1] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[0];
+	param.MTOmatrix[2] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[0];
 
 	printError("init Scene");
-
-	//=========================
-
-	tempTex = modelLoader.LoadTexture("resources/textures/lion.tga");
-
-
-	//=============
-
-
 
 	return true;
 }
@@ -103,7 +97,11 @@ void Scene::GenViewTexture(GLuint* viewID) {
 }
 
 void Scene::Voxelize() {
-	
+	// TODO: make this not update every draw call
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelRes);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
@@ -111,9 +109,9 @@ void Scene::Voxelize() {
 	glViewport(0, 0, voxelRes, voxelRes);
 	glEnable(GL_CULL_FACE);
 
-	int test = 7;
-
 	glClearTexImage(frontTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(sideTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(topTex, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	for(auto model = models->begin(); model != models->begin()+2; model++) {
 
@@ -135,25 +133,30 @@ void Scene::Voxelize() {
 		}
 
 		glBindImageTexture(0, frontTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(1, sideTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(2, topTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		
 		(*model)->Draw();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, 800, 800);
-	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
 	printError("Voxelize");
 
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(shaders->singleTriangle);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, frontTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, sideTex);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, topTex);
 
-
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), param.view);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -161,37 +164,17 @@ void Scene::Voxelize() {
 }
 
 void Scene::Draw() {
-	// TODO: make this not update every draw call
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	if(drawVoxels) {
-		Voxelize();
-		return;
-	}
-
-	GLuint activeProgram;
 	for(auto model = models->begin(); model != models->end(); model++) {
 		
 		// Don't draw models without texture
 		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
-		
-		if(drawVoxels) {
-			activeProgram = (*model)->GetVoxelProgram();
-			glBindVertexArray((*model)->GetVoxelVAO());
 
-			glDisable(GL_CULL_FACE);
-		} else {
-			activeProgram = (*model)->GetDrawProgram();
-			glBindVertexArray((*model)->GetDrawVAO());
-
-			glEnable(GL_CULL_FACE);
-		}
-		glUseProgram(activeProgram);
+		glUseProgram((*model)->GetDrawProgram());
+		glBindVertexArray((*model)->GetDrawVAO());
 		
+		glEnable(GL_CULL_FACE);
 
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
@@ -199,7 +182,7 @@ void Scene::Draw() {
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
 		} else {
 			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(glGetUniformLocation(activeProgram, "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+			glUniform3f(glGetUniformLocation((*model)->GetDrawProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 		}
 
 		// Bind the masking texture

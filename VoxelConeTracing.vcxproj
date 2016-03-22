@@ -258,7 +258,6 @@
     <ClCompile Include="src\common\Windows\glew.c" />
     <ClCompile Include="src\Model.cc" />
     <ClCompile Include="src\ModelLoader.cc" />
-    <ClCompile Include="src\OrthoCam.cc" />
     <ClCompile Include="src\Program.cc" />
     <ClCompile Include="src\Scene.cc" />
   </ItemGroup>
@@ -272,7 +271,6 @@
     <ClInclude Include="src\common\Windows\wglew.h" />
     <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\ModelLoader.h" />
-    <ClInclude Include="src\OrthoCam.h" />
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\Scene.h" />
   </ItemGroup>

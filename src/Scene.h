@@ -14,7 +14,7 @@
 #include "GL_utilities.h"
 
 struct SceneParam {
-	glm::mat4 MTOmatrix; // Centers and scales scene to fit inside +-1
+	glm::mat4 MTOmatrix[3]; // Centers and scales scene to fit inside +-1 from three different rotations
 	GLuint view;
 };
 
@@ -42,8 +42,7 @@ private:
 	// Voxel 2D view textures
 	GLuint frontTex, sideTex, topTex;
 	GLuint voxelRes;
-	GLuint tempTex;
-	
+
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
 	GLfloat scale;
@@ -56,9 +55,10 @@ public:
 	void SetSkipNoTexture(bool setValue);
 	bool* GetSkipNoTexturePtr() { return &skipNoTexture; }
 	void SetDrawVoxels(bool enable);
+	GLuint* GetVoxelResPtr() { return &voxelRes; }
 	GLuint* GetViewPtr() { return &param.view; }
 
-	bool Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes);
+	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
 };

@@ -35,6 +35,7 @@ Program::Program() {
 
 	sceneSelect = 0;
 	useOrtho = false;
+	voxelRes = 32;
 }
 
 int Program::Execute() {
@@ -141,17 +142,14 @@ bool Program::Init() {
 	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
 	if(!cam->Init()) return false;
 
-	// Set up an Orthogaphic camera for voxelization
-	orthoCam = new OrthoCam();
-	if(!orthoCam->Init()) return false;
 
 	// Load scenes
 	Scene* cornell = new Scene();
-	if(!cornell->Init("resources/cornell.obj", &shaders, 32)) return false;
+	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	/*
 	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders,32)) return false;
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
 	scenes.push_back(sponza);
 	*/
 
@@ -166,6 +164,7 @@ bool Program::Init() {
 	TwAddVarRO(antBar, "Use Ortho", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
 	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
 	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
+	TwAddVarRW(antBar, "Select Voxel Res", TW_TYPE_UINT32, scenes[0]->GetVoxelResPtr(), " min=16 max=512 step=16 group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -184,9 +183,7 @@ void Program::Update() {
 	UploadParams();
 
 	// Update the camera
-	if(useOrtho) {
-		orthoCam->UploadParams();
-	} else {
+	if(!useOrtho) {
 		cam->UpdateCamera();
 	}
 
@@ -196,7 +193,11 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	scenes[sceneSelect]->Draw();
+	if(useOrtho) {
+		scenes[sceneSelect]->Voxelize();
+	} else {
+		scenes[sceneSelect]->Draw();
+	}
 
 	TwDraw();
 

@@ -26,7 +26,6 @@
 #endif
 
 #include "Camera.h"
-#include "OrthoCam.h"
 #include "Scene.h"
 
 #include "GL_utilities.h"
@@ -51,11 +50,13 @@ private:
 	ProgramStruct param;
 	GLuint programBuffer;
 
-	OrthoCam* orthoCam;
 	bool useOrtho;
 	Camera* cam;
 	TwBar* antBar;
 	
+	// Voxel parameters
+	GLuint voxelRes;
+
 	// Shaders
 	ShaderList shaders;
 
