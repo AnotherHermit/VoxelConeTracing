@@ -9,16 +9,25 @@
 
 out vec4 outColor;
 
-in vec3 domDir;
+flat in uint domDir;
 
-uniform vec3 diffColor;
+//uniform vec3 diffColor;
+
+uniform layout(rgba8ui) uimage2D frontView;
+uniform layout(rgba8ui) uimage2D sideView;
+uniform layout(rgba8ui) uimage2D topView;
 
 void main()
 {	
 	// Set constant color for textureless models
-	vec3 color = domDir;// diffColor;
+	//vec4 color = vec4(diffColor,1.0f);
+	ivec2 coords = ivec2(floor(gl_FragCoord.xy));
 
-	
-	// Output complete color
-	outColor =  vec4(color, 1.0f);
+	if(domDir == 0) {
+		imageStore(frontView, coords, uvec4(255, 0, 0, 255));
+	} else if(domDir == 1) {
+		imageStore(frontView, coords, uvec4(0, 255, 0, 255));
+	} else {
+		imageStore(frontView, coords, uvec4(0, 0, 255, 255));
+	}
 }

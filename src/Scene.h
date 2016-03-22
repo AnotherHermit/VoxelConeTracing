@@ -35,10 +35,19 @@ private:
 	// Uniform buffer with scene settings
 	SceneParam param;
 	GLuint sceneBuffer;
+
+	// Empty framebuffer for voxelization
+	GLuint voxelFBO;
+
+	// Voxel 2D view textures
+	GLuint frontTex, sideTex, topTex;
+	GLuint voxelRes;
 	
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
 	GLfloat scale;
+
+	void GenViewTexture(GLuint* viewID);
 
 public:
 	Scene();
@@ -48,8 +57,9 @@ public:
 	void SetDrawVoxels(bool enable);
 	GLuint* GetViewPtr() { return &param.view; }
 
-	bool Init(const char* path, ShaderList* initShaders);
+	bool Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes);
 	void Draw();
+	void Voxelize();
 };
 
 #endif // SCENE_H

@@ -13,13 +13,11 @@
 
 #include <iostream>
 
-OrthoCam::OrthoCam(GLint initVoxelRes) {
+OrthoCam::OrthoCam() {
 	zeroVec = glm::vec3(0.0f);
 	xVec = glm::vec3(1.0f, 0.0f, 0.0f);
 	yVec = glm::vec3(0.0f, 1.0f, 0.0f);
 	zVec = glm::vec3(0.0f, 0.0f, 1.0f);
-	
-	voxelRes = initVoxelRes;
 
 	//cameraTwMembers[0] = { "Cam Pos x", TW_TYPE_FLOAT, offsetof(CameraParam, position.x), " readonly=true group=Info " };
 	//cameraTwMembers[1] = { "Cam Pos y", TW_TYPE_FLOAT, offsetof(CameraParam, position.y), " readonly=true group=Info " };

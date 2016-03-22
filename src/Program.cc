@@ -142,16 +142,16 @@ bool Program::Init() {
 	if(!cam->Init()) return false;
 
 	// Set up an Orthogaphic camera for voxelization
-	orthoCam = new OrthoCam(32);
+	orthoCam = new OrthoCam();
 	if(!orthoCam->Init()) return false;
 
 	// Load scenes
 	Scene* cornell = new Scene();
-	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
+	if(!cornell->Init("resources/cornell.obj", &shaders,32)) return false;
 	scenes.push_back(cornell);
 
 	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	if(!sponza->Init("resources/sponza.obj", &shaders,32)) return false;
 	scenes.push_back(sponza);
 
 

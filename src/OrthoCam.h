@@ -44,7 +44,6 @@ private:
 	glm::vec3 zeroVec, xVec, yVec, zVec;
 	
 	GLuint orthoCamBuffer;
-	GLint voxelRes;
 
 	OrthoCamParam param;
 
@@ -52,7 +51,7 @@ private:
 	//TwType cameraTwStruct;
 
 public:
-	OrthoCam(GLint initVoxelRes);
+	OrthoCam();
 	bool Init();
 
 	void UploadParams();

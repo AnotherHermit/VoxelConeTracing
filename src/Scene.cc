@@ -27,9 +27,21 @@ void Scene::SetSkipNoTexture(bool setValue) {
 	skipNoTexture = setValue;
 }
 
-bool Scene::Init(const char* path, ShaderList* initShaders) {
+bool Scene::Init(const char* path, ShaderList* initShaders, GLuint initVoxelRes) {
 	
 	shaders = initShaders;
+	voxelRes = initVoxelRes;
+
+	GenViewTexture(&frontTex);
+	GenViewTexture(&sideTex);
+	GenViewTexture(&topTex);
+
+	// Init the framebuffer for drawing
+	glGenFramebuffers(1, &voxelFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Set constant uniforms for the drawing programs
 	glUseProgram(shaders->texture);
@@ -42,6 +54,13 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxel);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "diffuseUnit"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "frontView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "sideView"), 1);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "topView"), 2);
+
+	// Set constant uniforms for voxelization program
+	glUseProgram(shaders->singleTriangle);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), 0);
 
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
@@ -65,11 +84,65 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	return true;
 }
 
+void Scene::GenViewTexture(GLuint* viewID) {
+	glGenTextures(1, viewID);
+	glBindTexture(GL_TEXTURE_2D, *viewID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, voxelRes, voxelRes, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+}
+
+void Scene::Voxelize() {
+	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
+
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelFBO);
+
+	for(auto model = models->begin(); model != models->end(); model++) {
+
+		// Don't draw models without texture
+		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
+			continue;
+		}
+
+		glUseProgram((*model)->GetVoxelProgram());
+
+		// Bind the color texture
+		if((*model)->hasDiffuseTex()) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
+		} else {
+			glm::vec3 diffColor = (*model)->GetDiffColor();
+			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+		}
+
+		glBindImageTexture(0, frontTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI);
+
+		(*model)->Draw();
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	printError("Voxelize");
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, frontTex);
+
+	glUseProgram(shaders->singleTriangle);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	printError("Draw Voxels");
+}
+
 void Scene::Draw() {
 	// TODO: make this not update every draw call
 	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	if(drawVoxels) {
+		Voxelize();
+		return;
+	}
 
 	GLuint activeProgram;
 
