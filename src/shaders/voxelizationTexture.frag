@@ -8,17 +8,31 @@
 #version 430
 
 in vec2 intTexCoords;
-in vec3 domDir;
+flat in uint domInd;
 
-out vec4 outColor;
-
+uniform vec3 diffColor;
 uniform sampler2D diffuseUnit;
+
+uniform layout(RGBA32F) image2D xView;
+uniform layout(RGBA32F) image2D yView;
+uniform layout(RGBA32F) image2D zView;
+uniform layout(RGBA32F) image3D voxelData;
+
+uniform int voxelRes;
 
 void main()
 {	
 	// Set constant color for textured models
-	vec3 color = domDir; //texture(diffuseUnit, intTexCoords).rgb;
+	vec3 color = texture(diffuseUnit, intTexCoords).rgb;
 
-	// Output complete color
-	outColor =  vec4(color, 1.0);
+	if(domInd == 0) {
+		imageStore(xView, ivec2(gl_FragCoord.xy), vec4(color, 1.0f));
+		imageStore(voxelData, ivec3(gl_FragCoord.z * voxelRes,gl_FragCoord.y, gl_FragCoord.x), vec4(color, 1.0f));
+	} else if (domInd == 1) {
+		imageStore(yView, ivec2(gl_FragCoord.xy), vec4(color, 1.0f));
+		imageStore(voxelData, ivec3(gl_FragCoord.x, voxelRes * gl_FragCoord.z, gl_FragCoord.y), vec4(color, 1.0f));
+	} else {
+		imageStore(zView, ivec2(gl_FragCoord.xy), vec4(color, 1.0f));
+		imageStore(voxelData, ivec3(gl_FragCoord.x, gl_FragCoord.y, voxelRes * (1.0f-gl_FragCoord.z)), vec4(color, 1.0f));
+	}
 }

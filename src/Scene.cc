@@ -31,11 +31,15 @@ void Scene::SetSkipNoTexture(bool setValue) {
 bool Scene::Init(const char* path, ShaderList* initShaders) {
 	
 	shaders = initShaders;
-	voxelRes = 64;
+	voxelRes = 128;
+	voxelLayer = 0;
+	voxelDataDraw = 0;
 
-	GenViewTexture(&frontTex);
-	GenViewTexture(&sideTex);
-	GenViewTexture(&topTex);
+	GenViewTexture(&xTex);
+	GenViewTexture(&yTex);
+	GenViewTexture(&zTex);
+
+	GenVoxelTexture(&voxelTex);
 
 	// Init the framebuffer for drawing
 	glGenFramebuffers(1, &voxelFBO);
@@ -55,13 +59,21 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxel);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "diffuseUnit"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "frontView"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "sideView"), 1);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "topView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "xView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "yView"), 1);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelRes"), voxelRes);
+	
 
 	// Set constant uniforms for voxelization program
 	glUseProgram(shaders->singleTriangle);
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "drawVoxels"), voxelDataDraw);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "layer"), voxelLayer);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelRes"), voxelRes);
+
 
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
@@ -79,21 +91,31 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	centerVertex = diffVector / 2.0f + *minVertex;
 	scale = glm::max(diffVector.x, glm::max(diffVector.y, diffVector.z));
 	
-	param.MTOmatrix[0] = glm::scale(glm::vec3(2.0f / scale)) * glm::translate(-centerVertex);
-	param.MTOmatrix[1] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[0];
-	param.MTOmatrix[2] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[0];
+	param.MTOmatrix[2] = glm::scale(glm::vec3(1.99f / scale)) * glm::translate(-centerVertex);
+	param.MTOmatrix[0] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[2];
+	param.MTOmatrix[1] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[2];
 
 	printError("init Scene");
 
 	return true;
 }
 
+// Generate textures for render to texture
 void Scene::GenViewTexture(GLuint* viewID) {
 	glGenTextures(1, viewID);
 	glBindTexture(GL_TEXTURE_2D, *viewID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, voxelRes, voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
+}
+
+// Create the 3D texture that contains the voxel data
+void Scene::GenVoxelTexture(GLuint* texID) {
+	glGenTextures(1, texID);
+	glBindTexture(GL_TEXTURE_3D, *texID);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, voxelRes, voxelRes, voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
 }
 
 void Scene::Voxelize() {
@@ -107,13 +129,13 @@ void Scene::Voxelize() {
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
 
 	glViewport(0, 0, voxelRes, voxelRes);
-	glEnable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 
-	glClearTexImage(frontTex, 0, GL_RGBA, GL_FLOAT, NULL);
-	glClearTexImage(sideTex, 0, GL_RGBA, GL_FLOAT, NULL);
-	glClearTexImage(topTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(xTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(yTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(zTex, 0, GL_RGBA, GL_FLOAT, NULL);
 
-	for(auto model = models->begin(); model != models->begin()+2; model++) {
+	for(auto model = models->begin(); model != models->end(); model++) {
 
 		// Don't draw models without texture
 		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
@@ -132,9 +154,10 @@ void Scene::Voxelize() {
 			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 		}
 
-		glBindImageTexture(0, frontTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		glBindImageTexture(1, sideTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		glBindImageTexture(2, topTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(0, xTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(1, yTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(2, zTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		
 		(*model)->Draw();
 
@@ -148,16 +171,24 @@ void Scene::Voxelize() {
 	printError("Voxelize");
 
 	glUseProgram(shaders->singleTriangle);
-
+	printError("Draw Voxels1");
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, frontTex);
+	glBindTexture(GL_TEXTURE_2D, xTex);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, sideTex);
+	glBindTexture(GL_TEXTURE_2D, yTex);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, topTex);
-
+	glBindTexture(GL_TEXTURE_2D, zTex);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_3D, voxelTex);
+	printError("Draw Voxels2");
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "layer"), voxelLayer);
+	printError("Draw Voxels31");
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelRes"), voxelRes);
+	printError("Draw Voxels32");
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "drawVoxels"), voxelDataDraw);
+	printError("Draw Voxels33");
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), param.view);
-
+	printError("Draw Voxels3");
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	printError("Draw Voxels");

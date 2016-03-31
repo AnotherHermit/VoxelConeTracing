@@ -147,11 +147,11 @@ bool Program::Init() {
 	Scene* cornell = new Scene();
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
-	/*
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
-	*/
+	
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
+	
 
 
 	// Add information to the antbar
@@ -165,6 +165,8 @@ bool Program::Init() {
 	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
 	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 	TwAddVarRW(antBar, "Select Voxel Res", TW_TYPE_UINT32, scenes[0]->GetVoxelResPtr(), " min=16 max=512 step=16 group=Controls ");
+	TwAddVarRW(antBar, "Select Voxel Layer", TW_TYPE_UINT32, scenes[0]->GetLayerPtr(), " min=0 max=127 group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxel Data", TW_TYPE_UINT32, scenes[0]->GetVoxelDataDrawPtr(), " min=0 max=1 group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;

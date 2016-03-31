@@ -39,15 +39,19 @@ private:
 	// Empty framebuffer for voxelization
 	GLuint voxelFBO;
 
-	// Voxel 2D view textures
-	GLuint frontTex, sideTex, topTex;
+	// Voxel view textures
+	GLuint xTex, yTex, zTex;
+	GLuint voxelTex;
 	GLuint voxelRes;
+	GLuint voxelLayer;
+	GLuint voxelDataDraw;
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
 	GLfloat scale;
 
 	void GenViewTexture(GLuint* viewID);
+	void GenVoxelTexture(GLuint* texID);
 
 public:
 	Scene();
@@ -57,6 +61,8 @@ public:
 	void SetDrawVoxels(bool enable);
 	GLuint* GetVoxelResPtr() { return &voxelRes; }
 	GLuint* GetViewPtr() { return &param.view; }
+	GLuint* GetLayerPtr() { return &voxelLayer; }
+	GLuint* GetVoxelDataDrawPtr() { return &voxelDataDraw; }
 
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();

@@ -14,27 +14,9 @@ in vec2 inTexCoords;
 out vec3 exNormal;
 out vec2 exTexCoords;
 
-struct OrthoCam {
-	mat4 WTVmatrix[3];
-	mat4 VTPmatrix;
-};
-
-struct SceneParams {
-	mat4 MTOmatrix;
-	uint view;
-};
-
-layout (std140, binding = 10) uniform OrthoCamBuffer {
-	OrthoCam cam;
-};
-
-layout (std140, binding = 11) uniform SceneBuffer {
-	SceneParams scene;
-};
-
 void main(void)
 {
 	exNormal = inNormal;
 	exTexCoords = inTexCoords;
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix[scene.view] * scene.MTOmatrix * vec4(inPosition, 1.0f);
+	gl_Position = vec4(inPosition, 1.0f);
 }

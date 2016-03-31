@@ -27,7 +27,7 @@ void main()
 {
 	vec3 dir = abs(exNormal[0]);
 	float maxComponent = max(dir.x, max(dir.y, dir.z));
-	uint ind = maxComponent == dir.x ? 1 : maxComponent == dir.y ? 2 : 0;
+	uint ind = maxComponent == dir.x ? 0 : maxComponent == dir.y ? 1 : 2;
 
 	gl_Position = scene.MTOmatrix[ind] * gl_in[0].gl_Position;
 	domInd = ind;
