@@ -58,13 +58,21 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxel);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "diffuseUnit"), 0);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "xView"), 0);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "yView"), 1);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "zView"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelData"), 3);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelRes"), voxelRes);
 	
+	// Set constant uniforms for voxel programs
+	glUseProgram(shaders->voxelTexture);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "diffuseUnit"), 4);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "xView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "yView"), 1);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "voxelRes"), voxelRes);
+
 
 	// Set constant uniforms for voxelization program
 	glUseProgram(shaders->singleTriangle);
@@ -147,7 +155,7 @@ void Scene::Voxelize() {
 
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
-			glActiveTexture(GL_TEXTURE0);
+			glActiveTexture(GL_TEXTURE4);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
 		} else {
 			glm::vec3 diffColor = (*model)->GetDiffColor();
