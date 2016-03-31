@@ -144,13 +144,13 @@ bool Program::Init() {
 
 
 	// Load scenes
-	//Scene* cornell = new Scene();
-	//if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
-	//scenes.push_back(cornell);
+	Scene* cornell = new Scene();
+	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
+	scenes.push_back(cornell);
 	
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
 	
 
 

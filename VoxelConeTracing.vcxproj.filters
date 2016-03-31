@@ -139,5 +139,14 @@
     <None Include="src\shaders\singleTriangle.vert">
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
+    <None Include="src\shaders\voxelSimple.frag">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\voxelSimple.geom">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\voxelSimple.vert">
+      <Filter>Source Files\Shaders\Drawing</Filter>
+    </None>
   </ItemGroup>
 </Project>

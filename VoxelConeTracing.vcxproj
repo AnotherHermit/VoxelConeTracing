@@ -289,6 +289,9 @@
     <None Include="src\shaders\voxelizationTexture.frag" />
     <None Include="src\shaders\voxelizationTexture.geom" />
     <None Include="src\shaders\voxelizationTexture.vert" />
+    <None Include="src\shaders\voxelSimple.frag" />
+    <None Include="src\shaders\voxelSimple.geom" />
+    <None Include="src\shaders\voxelSimple.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
