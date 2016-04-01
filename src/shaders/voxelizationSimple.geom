@@ -16,7 +16,11 @@ flat out uint domInd;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	uint voxelDraw;
 	uint view;
+	uint voxelRes;
+	uint voxelLayer;
 };
 
 layout (std140, binding = 11) uniform SceneBuffer {

@@ -19,23 +19,39 @@
 #include <iostream>
 
 bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex) {
-	shaders = initShaders;
-	maxVertex = *outMaxVertex;
-	minVertex = *outMinVertex;
-	models = outModels;
-
 	if(!LoadModels(path)) return false;
-
 	if(!LoadTextures()) return false;
 
 	// Read all models
-	AddModels();
+	if(!AddModels(outModels, initShaders)) return false;
 
-	*outMaxVertex = maxVertex;
-	*outMinVertex = minVertex;
+	// Find the size of the scene
+	if(!CalculateMinMax(outMaxVertex, outMinVertex)) return false;
+
+	// If we want to reuse the ModelLoader
+	shapes.clear();
+	materials.clear();
 
 	printError("init Model");
 	return true;
+}
+
+bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
+	if(!LoadModels(path)) return false;
+	
+	// Set both programs to the voxel drawing one
+	outModel->SetProgram(shader, shader);
+
+	// Load standard vertex data needed by all models, also creates VAO
+	outModel->SetStandardData(shapes[0].mesh.positions.size(), shapes[0].mesh.positions.data(),
+							  shapes[0].mesh.normals.size(), shapes[0].mesh.normals.data(),
+							  shapes[0].mesh.indices.size(), shapes[0].mesh.indices.data());
+
+	return true;
+}
+
+bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders) {
+	return LoadScene(path, outModels, initShaders, nullptr, nullptr);
 }
 
 bool ModelLoader::LoadModels(const char* path) {
@@ -55,7 +71,7 @@ bool ModelLoader::LoadTextures() {
 
 	for(size_t i = 0; i < materials.size(); i++) {
 		TextureData* data = new TextureData;
-		
+
 		// Load color texture of available
 		data->diffuseID = -1;
 		startPath = "resources/";
@@ -138,37 +154,33 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 	return texID;
 }
 
-void ModelLoader::AddModels() {
+bool ModelLoader::AddModels(std::vector<Model*>* models, ShaderList* shaders) {
+	if(models == nullptr) {
+		std::cout << "No model vector was supplied when loading scene" << std::endl;
+		return false;
+	}
+
+	if(shaders == nullptr) {
+		std::cout << "No shader list was supplied when loading scene" << std::endl;
+		return false;
+	}
+
 	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
-
-		// Check vertex data for min and max corners
-		for(auto vertex = shape->mesh.positions.begin(); vertex != shape->mesh.positions.end()-3; vertex+=3) {
-			glm::vec3 currentVertex = glm::vec3(vertex[0], vertex[1], vertex[2]);
-			
-			if(maxVertex == nullptr) {
-				maxVertex = new glm::vec3(currentVertex);
-			} else {
-				*maxVertex = glm::max(currentVertex, *maxVertex);
-			}
-
-			if(minVertex == nullptr) {
-				minVertex = new glm::vec3(currentVertex);
-			} else {
-				*minVertex = glm::min(currentVertex, *minVertex);
-			}
-		}
-
 		Model* model = new Model();
 
 		// Set material first since this determines shader program
-		model->SetMaterial(textures[shape->mesh.material_ids[0]]);
+		if(shape->mesh.material_ids[0] != -1) {
+			model->SetMaterial(textures[shape->mesh.material_ids[0]]);
+		} else {
+			model->SetMaterial(nullptr);
+		}
 
 		if(model->hasMaskTex()) {
-			model->SetProgram(shaders->mask, shaders->voxelTexture);
+			model->SetProgram(shaders->mask, shaders->voxelizeTexture);
 		} else if(model->hasDiffuseTex()) {
-			model->SetProgram(shaders->texture, shaders->voxelTexture);
+			model->SetProgram(shaders->texture, shaders->voxelizeTexture);
 		} else {
-			model->SetProgram(shaders->simple, shaders->voxel);
+			model->SetProgram(shaders->simple, shaders->voxelize);
 		}
 
 		// Load standard vertex data needed by all models, also creates VAO
@@ -180,7 +192,7 @@ void ModelLoader::AddModels() {
 		if(model->hasDiffuseTex()) {
 			model->SetTextureData(shape->mesh.texcoords.size(), shape->mesh.texcoords.data());
 		}
-		
+
 		// Sort masked models last in the drawing list since they are transparent
 		if(model->hasMaskTex()) {
 			models->push_back(model);
@@ -188,4 +200,34 @@ void ModelLoader::AddModels() {
 			models->insert(models->begin(), model);
 		}
 	}
+	return true;
+}
+
+bool ModelLoader::CalculateMinMax(glm::vec3** maxVertex, glm::vec3** minVertex) {
+	if(maxVertex == nullptr || minVertex == nullptr) {
+		std::cout << "No min/max vector was supplied when loading a scene" << std::endl;
+		return true;
+	}
+
+
+	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
+
+		// Check vertex data for min and max corners
+		for(auto vertex = shape->mesh.positions.begin(); vertex != shape->mesh.positions.end() - 3; vertex += 3) {
+			glm::vec3 currentVertex = glm::vec3(vertex[0], vertex[1], vertex[2]);
+
+			if(*maxVertex == nullptr) {
+				*maxVertex = new glm::vec3(currentVertex);
+			} else {
+				**maxVertex = glm::max(currentVertex, **maxVertex);
+			}
+
+			if(*minVertex == nullptr) {
+				*minVertex = new glm::vec3(currentVertex);
+			} else {
+				**minVertex = glm::min(currentVertex, **minVertex);
+			}
+		}
+	}
+	return true;
 }

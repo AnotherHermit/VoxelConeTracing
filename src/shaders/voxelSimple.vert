@@ -14,7 +14,6 @@ out vec3 exNormal;
 out vec3 voxelPos;
 
 uniform int voxelRes;
-uniform mat4 MTWmatrix;
 
 struct Camera {
 	mat4 WTVmatrix;
@@ -26,17 +25,30 @@ layout (std140, binding = 10) uniform CameraBuffer {
 	Camera cam;
 };
 
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+};
+
+layout (std140, binding = 11) uniform SceneBuffer {
+	SceneParams scene;
+};
+
 void main(void)
 {
-	float size = float(voxelRes);
+	float size = float(scene.voxelRes);
 
-	int xPos = mod(gl_InstanceID, voxelRes);
-	int temp = gl_InstanceID / voxelRes;
-	int yPos = mod(temp, voxelRes);
-	int zPos = temp / voxelRes;
+	uint xPos = gl_InstanceID % scene.voxelRes;
+	uint temp = gl_InstanceID / scene.voxelRes;
+	uint yPos = temp % scene.voxelRes;
+	uint zPos = temp / scene.voxelRes;
 	voxelPos = vec3(float(xPos) / size, float(yPos) / size, float(zPos) / size);
 
 	exNormal = inNormal;
-	gl_Position = VTPmatrix * WTVmatrix * MTWmatrix * vec4(inPosition, 1.0f);
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition + voxelPos, 1.0f);
 }
 

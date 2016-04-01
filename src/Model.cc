@@ -12,9 +12,15 @@
 #include <iostream>
 
 void Model::SetMaterial(TextureData* textureData) {
-	diffuseID = textureData->diffuseID;
-	maskID = textureData->maskID;
-	diffColor = textureData->diffColor;
+	if(textureData != nullptr) {
+		diffuseID = textureData->diffuseID;
+		maskID = textureData->maskID;
+		diffColor = textureData->diffColor;
+	} else {
+		diffuseID = -1;
+		maskID = -1;
+		diffColor = glm::vec3(1.0f, 0.0f, 0.0f);
+	}
 }
 
 void Model::SetProgram(GLuint initProgram, GLuint initVoxelProgram) {
@@ -91,7 +97,7 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
-	
+
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 

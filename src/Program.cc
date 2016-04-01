@@ -116,17 +116,22 @@ bool Program::Init() {
 	if(err == GL_FALSE) return false;
 
 	// Load shaders for voxelization
-	shaders.voxel = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
-	glGetProgramiv(shaders.voxel, GL_LINK_STATUS, &err);
+	shaders.voxelize = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
+	glGetProgramiv(shaders.voxelize, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
-	shaders.voxelTexture = loadShadersG("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag", "src/shaders/voxelizationTexture.geom");
-	glGetProgramiv(shaders.voxelTexture, GL_LINK_STATUS, &err);
+	shaders.voxelizeTexture = loadShadersG("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag", "src/shaders/voxelizationTexture.geom");
+	glGetProgramiv(shaders.voxelizeTexture, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
 	// Single triangle shader for deferred shading etc.
 	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
 	glGetProgramiv(shaders.singleTriangle, GL_LINK_STATUS, &err);
+	if(err == GL_FALSE) return false;
+
+	// Draw voxels from 3D texture
+	shaders.voxel = loadShadersG("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag", "src/shaders/voxelSimple.geom");
+	glGetProgramiv(shaders.voxel, GL_LINK_STATUS, &err);
 	if(err == GL_FALSE) return false;
 
 	printError("after shader load");

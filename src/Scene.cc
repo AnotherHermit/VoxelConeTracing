@@ -17,11 +17,18 @@
 
 Scene::Scene() {
 	skipNoTexture = false;
-	param.view = 0;
 	drawVoxels = false;
+
+	param.voxelRes = 128;
+	param.voxelLayer = 0;
+	param.voxelDraw = 0;
+	param.view = 0;
+
 	maxVertex = nullptr;
 	minVertex = nullptr;
+
 	models = new std::vector<Model*>();
+	voxelModel = new Model();
 }
 
 void Scene::SetSkipNoTexture(bool setValue) {
@@ -31,9 +38,10 @@ void Scene::SetSkipNoTexture(bool setValue) {
 bool Scene::Init(const char* path, ShaderList* initShaders) {
 	
 	shaders = initShaders;
-	voxelRes = 128;
-	voxelLayer = 0;
-	voxelDataDraw = 0;
+	param.voxelRes = 128;
+	param.voxelLayer = 0;
+	param.voxelDraw = 0;
+	param.view = 0;
 
 	GenViewTexture(&xTex);
 	GenViewTexture(&yTex);
@@ -44,8 +52,8 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	// Init the framebuffer for drawing
 	glGenFramebuffers(1, &voxelFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelRes);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, param.voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, param.voxelRes);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Set constant uniforms for the drawing programs
@@ -57,30 +65,24 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glUniform1i(glGetUniformLocation(shaders->mask, "maskUnit"), 1);
 
 	// Set constant uniforms for voxel programs
-	glUseProgram(shaders->voxel);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "xView"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "yView"), 1);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "zView"), 2);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelRes"), voxelRes);
+	glUseProgram(shaders->voxelize);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "xView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "yView"), 1);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelData"), 3);
 	
 	// Set constant uniforms for voxel programs
-	glUseProgram(shaders->voxelTexture);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "diffuseUnit"), 4);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "xView"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "yView"), 1);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "zView"), 2);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders->voxelTexture, "voxelRes"), voxelRes);
+	glUseProgram(shaders->voxelizeTexture);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "xView"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "yView"), 1);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "diffuseUnit"), 4);
 
 
 	// Set constant uniforms for voxelization program
 	glUseProgram(shaders->singleTriangle);
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), 0);
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "drawVoxels"), voxelDataDraw);
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "layer"), voxelLayer);
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelRes"), voxelRes);
 
 
 	// Set non-constant uniforms for all programs
@@ -95,10 +97,18 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 		return false;
 	}
 
+	// Load a model for drawing the voxel
+	if(!modelLoader.LoadModel("resources/voxel.obj", voxelModel, shaders->voxel)) {
+		std::cout << "Failed to load voxel model" << std::endl;
+		return false;
+	}
+
+	// Calculate the scaling of the scene
 	glm::vec3 diffVector = (*maxVertex - *minVertex);
 	centerVertex = diffVector / 2.0f + *minVertex;
 	scale = glm::max(diffVector.x, glm::max(diffVector.y, diffVector.z));
 	
+	// Set the matrices for looking at the scene in three different ways
 	param.MTOmatrix[2] = glm::scale(glm::vec3(1.99f / scale)) * glm::translate(-centerVertex);
 	param.MTOmatrix[0] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[2];
 	param.MTOmatrix[1] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[2];
@@ -114,7 +124,7 @@ void Scene::GenViewTexture(GLuint* viewID) {
 	glBindTexture(GL_TEXTURE_2D, *viewID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, voxelRes, voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
 }
 
 // Create the 3D texture that contains the voxel data
@@ -123,7 +133,7 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 	glBindTexture(GL_TEXTURE_3D, *texID);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, voxelRes, voxelRes, voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
 }
 
 void Scene::Voxelize() {
@@ -133,15 +143,16 @@ void Scene::Voxelize() {
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, voxelRes);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, param.voxelRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, param.voxelRes);
 
-	glViewport(0, 0, voxelRes, voxelRes);
+	glViewport(0, 0, param.voxelRes, param.voxelRes);
 	glDisable(GL_CULL_FACE);
 
 	glClearTexImage(xTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(yTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(zTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(voxelTex, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -179,7 +190,7 @@ void Scene::Voxelize() {
 	printError("Voxelize");
 
 	glUseProgram(shaders->singleTriangle);
-	printError("Draw Voxels1");
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, xTex);
 	glActiveTexture(GL_TEXTURE1);
@@ -188,15 +199,8 @@ void Scene::Voxelize() {
 	glBindTexture(GL_TEXTURE_2D, zTex);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
-	printError("Draw Voxels2");
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "layer"), voxelLayer);
-	printError("Draw Voxels31");
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelRes"), voxelRes);
-	printError("Draw Voxels32");
-	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "drawVoxels"), voxelDataDraw);
-	printError("Draw Voxels33");
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), param.view);
-	printError("Draw Voxels3");
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	printError("Draw Voxels");

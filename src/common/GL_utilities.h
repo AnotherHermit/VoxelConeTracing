@@ -64,9 +64,10 @@ struct ShaderList {
 	GLuint simple;
 	GLuint texture;
 	GLuint mask;
-	GLuint voxel;
-	GLuint voxelTexture;
+	GLuint voxelize;
+	GLuint voxelizeTexture;
 	GLuint singleTriangle;
+	GLuint voxel;
 };
 
 

@@ -8,23 +8,30 @@
 #version 430
 
 in vec2 exTexCoords;
-
 out vec4 outColor;
 
-uniform int drawVoxels;
-
 uniform sampler2D usedView;
-
 uniform sampler3D voxelData;
-uniform int layer;
-uniform int voxelRes;
+
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+};
+
+layout (std140, binding = 11) uniform SceneBuffer {
+	SceneParams scene;
+};
 
 void main()
 {	
 
-	if(drawVoxels == 1) {
+	if(scene.voxelDraw == 1) {
 		outColor = texture(usedView, exTexCoords);
 	} else {
-		outColor = texture(voxelData, vec3(exTexCoords, float(layer) / float(voxelRes-1)));
+		outColor = texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1)));
 	}
 }
