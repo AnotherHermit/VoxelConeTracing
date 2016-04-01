@@ -19,7 +19,7 @@ Scene::Scene() {
 	skipNoTexture = false;
 	drawVoxels = false;
 
-	param.voxelRes = 128;
+	param.voxelRes = 64;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
@@ -36,12 +36,8 @@ void Scene::SetSkipNoTexture(bool setValue) {
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {
-	
+
 	shaders = initShaders;
-	param.voxelRes = 128;
-	param.voxelLayer = 0;
-	param.voxelDraw = 0;
-	param.view = 0;
 
 	GenViewTexture(&xTex);
 	GenViewTexture(&yTex);
@@ -70,7 +66,7 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "yView"), 1);
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "zView"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelData"), 3);
-	
+
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxelizeTexture);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "xView"), 0);
@@ -79,17 +75,23 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelData"), 3);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "diffuseUnit"), 4);
 
-
-	// Set constant uniforms for voxelization program
+	// Set constant uniforms for simple triangle drawing
 	glUseProgram(shaders->singleTriangle);
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelData"), 3);
 
+	// Set constant uniforms for drawing the voxel overlay
+	glUseProgram(shaders->voxel);
+	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelData"), 3);
+
+	printError("Upload Scene Uniforms for Shaders");
 
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneParam), NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	printError("Upload Scene Buffer");
 
 	ModelLoader modelLoader;
 	if(!modelLoader.LoadScene(path, models, shaders, &maxVertex, &minVertex)) {
@@ -107,11 +109,13 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glm::vec3 diffVector = (*maxVertex - *minVertex);
 	centerVertex = diffVector / 2.0f + *minVertex;
 	scale = glm::max(diffVector.x, glm::max(diffVector.y, diffVector.z));
-	
+
 	// Set the matrices for looking at the scene in three different ways
 	param.MTOmatrix[2] = glm::scale(glm::vec3(1.99f / scale)) * glm::translate(-centerVertex);
 	param.MTOmatrix[0] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[2];
 	param.MTOmatrix[1] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[2];
+
+	param.MTWmatrix = glm::translate(*minVertex) * glm::scale(glm::vec3(1.0f / param.voxelRes));
 
 	printError("init Scene");
 
@@ -177,7 +181,7 @@ void Scene::Voxelize() {
 		glBindImageTexture(1, yTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(2, zTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		
+
 		(*model)->Draw();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -188,6 +192,13 @@ void Scene::Voxelize() {
 	glViewport(0, 0, 800, 800);
 
 	printError("Voxelize");
+}
+
+void Scene::DrawTextures() {
+	// TODO: make this not update every draw call
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	glUseProgram(shaders->singleTriangle);
 
@@ -207,38 +218,59 @@ void Scene::Voxelize() {
 }
 
 void Scene::Draw() {
-	for(auto model = models->begin(); model != models->end(); model++) {
-		
-		// Don't draw models without texture
-		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
-			continue;
-		}
+	// TODO: make this not update every draw call
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		glUseProgram((*model)->GetDrawProgram());
-		glBindVertexArray((*model)->GetDrawVAO());
-		
+
+	if(drawModels) {
+		for(auto model = models->begin(); model != models->end(); model++) {
+
+			// Don't draw models without texture
+			if(skipNoTexture && !(*model)->hasDiffuseTex()) {
+				continue;
+			}
+
+			glUseProgram((*model)->GetDrawProgram());
+			glBindVertexArray((*model)->GetDrawVAO());
+
+			glEnable(GL_CULL_FACE);
+
+			// Bind the color texture
+			if((*model)->hasDiffuseTex()) {
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
+			} else {
+				glm::vec3 diffColor = (*model)->GetDiffColor();
+				glUniform3f(glGetUniformLocation((*model)->GetDrawProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+			}
+
+			// Bind the masking texture
+			if((*model)->hasMaskTex()) {
+				glDisable(GL_CULL_FACE);
+
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, (*model)->GetMaskID());
+			}
+
+			(*model)->Draw();
+		}
+		printError("Draw Models");
+	}
+
+	if(drawVoxels) {
 		glEnable(GL_CULL_FACE);
 
-		// Bind the color texture
-		if((*model)->hasDiffuseTex()) {
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
-		} else {
-			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(glGetUniformLocation((*model)->GetDrawProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
-		}
+		glUseProgram(voxelModel->GetDrawProgram());
+		glBindVertexArray(voxelModel->GetDrawVAO());
 
-		// Bind the masking texture
-		if((*model)->hasMaskTex()) {
-			glDisable(GL_CULL_FACE);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_3D, voxelTex);
 
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, (*model)->GetMaskID());
-		}
-
-		(*model)->Draw();
+		glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)voxelModel->GetNumIndices(), GL_UNSIGNED_INT, 0L, param.voxelRes*param.voxelRes*(param.voxelRes-1));
+		printError("Draw Voxel Overlay");
 	}
-	printError("Draw Models");
 }
 
 void Scene::SetDrawVoxels(bool enable) {

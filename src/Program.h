@@ -51,11 +51,9 @@ private:
 	GLuint programBuffer;
 
 	bool useOrtho;
+	bool drawVoxelOverlay;
 	Camera* cam;
 	TwBar* antBar;
-	
-	// Voxel parameters
-	GLuint voxelRes;
 
 	// Shaders
 	ShaderList shaders;

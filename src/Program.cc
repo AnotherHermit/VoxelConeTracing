@@ -35,7 +35,7 @@ Program::Program() {
 
 	sceneSelect = 0;
 	useOrtho = false;
-	voxelRes = 32;
+	drawVoxelOverlay = false;
 }
 
 int Program::Execute() {
@@ -151,10 +151,12 @@ bool Program::Init() {
 	// Load scenes
 	Scene* cornell = new Scene();
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
+	cornell->Voxelize();
 	scenes.push_back(cornell);
 	
 	//Scene* sponza = new Scene();
 	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//sponza->Voxelize();
 	//scenes.push_back(sponza);
 	
 
@@ -164,14 +166,16 @@ bool Program::Init() {
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	//TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
-	TwAddVarRO(antBar, "Use Ortho", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
-	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
-	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
-	TwAddVarRW(antBar, "Select Voxel Res", TW_TYPE_UINT32, scenes[0]->GetVoxelResPtr(), " min=16 max=512 step=16 group=Controls ");
-	TwAddVarRW(antBar, "Select Voxel Layer", TW_TYPE_UINT32, scenes[0]->GetLayerPtr(), " min=0 max=127 group=Controls ");
+	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, scenes[0]->GetModelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, scenes[0]->GetVoxelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
 	TwAddVarRW(antBar, "Draw Voxel Data", TW_TYPE_UINT32, scenes[0]->GetVoxelDataDrawPtr(), " min=0 max=1 group=Controls ");
+	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
+	TwAddVarRW(antBar, "Select Voxel Layer", TW_TYPE_UINT32, scenes[0]->GetLayerPtr(), " min=0 max=127 group=Controls ");
+	TwAddVarRW(antBar, "Select Voxel Res", TW_TYPE_UINT32, scenes[0]->GetVoxelResPtr(), " min=16 max=512 step=16 group=Controls ");
+	//TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
+	//TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
+	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -181,6 +185,7 @@ bool Program::Init() {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
 
 	return true;
 }
@@ -201,7 +206,7 @@ void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if(useOrtho) {
-		scenes[sceneSelect]->Voxelize();
+		scenes[sceneSelect]->DrawTextures();
 	} else {
 		scenes[sceneSelect]->Draw();
 	}
@@ -269,9 +274,10 @@ void Program::OnKeypress(SDL_Event *Event) {
 			break;
 		case SDLK_SPACE:
 			useOrtho = !useOrtho;
-			scenes[sceneSelect]->SetDrawVoxels(useOrtho);
 			break;
 		case SDLK_t:
+			drawVoxelOverlay = !drawVoxelOverlay;
+			scenes[sceneSelect]->SetDrawVoxels(drawVoxelOverlay);
 			break;
 		case SDLK_f:
 			cam->TogglePause();

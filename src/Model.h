@@ -64,6 +64,7 @@ public:
 	GLuint GetDiffuseID() { return diffuseID; }
 	GLuint GetMaskID() { return maskID; }
 	glm::vec3 GetDiffColor() { return diffColor; }
+	size_t GetNumIndices() { return nIndices; }
 
 private:
 	GLuint drawProgram, voxelProgram, useProgram;

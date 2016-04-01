@@ -13,8 +13,6 @@ in vec3 inNormal;
 out vec3 exNormal;
 out vec3 voxelPos;
 
-uniform int voxelRes;
-
 struct Camera {
 	mat4 WTVmatrix;
 	mat4 VTPmatrix;
@@ -48,7 +46,7 @@ void main(void)
 	uint zPos = temp / scene.voxelRes;
 	voxelPos = vec3(float(xPos) / size, float(yPos) / size, float(zPos) / size);
 
-	exNormal = inNormal;
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition + voxelPos, 1.0f);
+	exNormal = mat3(cam.WTVmatrix) * inNormal;
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition + voxelPos * scene.voxelRes * 2.0f + vec3(1.0f), 1.0f);
 }
 

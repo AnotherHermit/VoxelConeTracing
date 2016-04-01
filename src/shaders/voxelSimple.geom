@@ -21,16 +21,15 @@ out vec3 outNormal;
 void main()
 {
 	vec4 color = texture(voxelData, voxelPos[0]);
-	
-	if(color == vec4(0.0f)) {
-		EndPrimitive();
-	}
 
-	outColor = color;
-	outNormal = exNormal[0];
+	if(color.a < 0.5f) {
+		return;
+	}
 
 	for(int i = 0; i < 3; i++) {
 		gl_Position = gl_in[i].gl_Position;
+		outNormal = exNormal[i];
+		outColor = color;
 		EmitVertex();
 	}
 	

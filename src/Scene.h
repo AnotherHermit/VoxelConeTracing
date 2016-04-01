@@ -36,6 +36,7 @@ private:
 	// Scene settings
 	bool skipNoTexture;
 	bool drawVoxels;
+	bool drawModels;
 
 	// Uniform buffer with scene settings
 	SceneParam param;
@@ -65,9 +66,12 @@ public:
 	GLuint* GetViewPtr() { return &param.view; }
 	GLuint* GetVoxelResPtr() { return &param.voxelRes; }
 	GLuint* GetLayerPtr() { return &param.voxelLayer; }
+	bool* GetModelDrawPtr() { return &drawModels; }
+	bool* GetVoxelDrawPtr() { return &drawVoxels; }
 
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
+	void DrawTextures();
 	void Voxelize();
 };
 

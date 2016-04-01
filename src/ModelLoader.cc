@@ -40,7 +40,7 @@ bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
 	if(!LoadModels(path)) return false;
 	
 	// Set both programs to the voxel drawing one
-	outModel->SetProgram(shader, shader);
+	outModel->SetProgram(shader, 0);
 
 	// Load standard vertex data needed by all models, also creates VAO
 	outModel->SetStandardData(shapes[0].mesh.positions.size(), shapes[0].mesh.positions.data(),
