@@ -15,6 +15,7 @@
 #include "Model.h"
 #include "GL_utilities.h"
 
+// Values the should exist on the GPU
 struct SceneParam {
 	glm::mat4 MTOmatrix[3]; // Centers and scales scene to fit inside +-1 from three different rotations
 	glm::mat4 MTWmatrix; // Matrix for voxel data
@@ -24,12 +25,22 @@ struct SceneParam {
 	GLuint voxelLayer;
 };
 
+// Scene Options struct
+struct SceneOptions {
+	bool skipNoTexture;
+	bool drawVoxels;
+	bool drawModels;
+	bool drawTextures;
+};
+
+// The different view directions
 enum ViewDirection {
 	VIEW_X,
 	VIEW_Y,
 	VIEW_Z
 };
 
+// Voxel Resolutions used, over 512 not really needed (even 512 is stretching it on low level HW)
 enum VoxelResolutions {
 	RES16 = 16,
 	RES32 = 32,
@@ -50,11 +61,8 @@ private:
 	// Programs used to draw models
 	ShaderList* shaders;
 
-	// Scene settings
-	bool skipNoTexture;
-	bool drawVoxels;
-	bool drawModels;
-	bool drawTextures;
+	// Scene Options
+	SceneOptions options;
 
 	// Uniform buffer with scene settings
 	SceneParam param;
@@ -80,23 +88,16 @@ private:
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
 	TwStructMember sceneTwMembers[4];
+	TwStructMember sceneOptionTwMembers[4];
 	static TwType* resTwType;
 	static TwType* viewTwType;
 	static TwType* sceneTwStruct;
+	static TwType* sceneOptionsTwStruct;
 	static bool isInitialized;
+	bool InitializeAntBar();
 
 public:
 	Scene();
-
-	GLuint* GetVoxelDataDrawPtr() { return &param.voxelDraw; }
-	GLuint* GetViewPtr() { return &param.view; }
-	GLuint* GetVoxelResPtr() { return &param.voxelRes; }
-	GLuint* GetLayerPtr() { return &param.voxelLayer; }
-
-	bool* GetSkipNoTexturePtr() { return &skipNoTexture; }
-	bool* GetModelDrawPtr() { return &drawModels; }
-	bool* GetVoxelDrawPtr() { return &drawVoxels; }
-	bool* GetTextureDrawPtr() { return &drawTextures; }
 
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
@@ -104,8 +105,11 @@ public:
 
 	// AntTweakBar
 	static TwType GetSceneTwType() { return *sceneTwStruct; }
+	static TwType GetSceneOptionTwType() { return *sceneOptionsTwStruct; }
 	static void TW_CALL SetSceneCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneCB(void* value, void* clientData);
+	static void TW_CALL SetSceneOptionsCB(const void* value, void* clientData);
+	static void TW_CALL GetSceneOptionsCB(void* value, void* clientData);
 };
 
 #endif // SCENE_H

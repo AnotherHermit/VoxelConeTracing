@@ -14,17 +14,19 @@
 #include "glm\gtc\constants.hpp"
 
 #include <iostream>
+#include <sstream>
 
 bool Scene::isInitialized = false;
 TwType* Scene::resTwType = nullptr;
 TwType* Scene::viewTwType = nullptr;
 TwType* Scene::sceneTwStruct = nullptr;
+TwType* Scene::sceneOptionsTwStruct = nullptr;
 
 Scene::Scene() {
-	skipNoTexture = false;
-	drawModels = true;
-	drawVoxels = false;
-	drawTextures = false;
+	options.skipNoTexture = false;
+	options.drawModels = true;
+	options.drawVoxels = false;
+	options.drawTextures = false;
 
 	param.voxelRes = 128;
 	param.voxelLayer = 0;
@@ -41,39 +43,13 @@ Scene::Scene() {
 	xTex = 0;
 	yTex = 0;
 	zTex = 0;
-
-	// This should only be done for the first scene
-	if(!isInitialized) {
-		// AntTweakBar Stuff
-		viewTwEnum[0] = { VIEW_X, "Along X" };
-		viewTwEnum[1] = { VIEW_Y, "Along Y" };
-		viewTwEnum[2] = { VIEW_Z, "Along Z" };
-		viewTwType = new TwType;
-		*viewTwType = TwDefineEnum("Views", viewTwEnum, 3);
-
-		resTwEnum[0] = { RES16, "16 ^ 3" };
-		resTwEnum[1] = { RES32, "32 ^ 3" };
-		resTwEnum[2] = { RES64, "64 ^ 3" };
-		resTwEnum[3] = { RES128, "128 ^ 3" };
-		resTwEnum[4] = { RES256, "256 ^ 3" };
-		resTwEnum[5] = { RES512, "512 ^ 3" };
-		resTwType = new TwType;
-		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
-
-		sceneTwMembers[0] = { "Draw Voxel Data", TW_TYPE_BOOL32, offsetof(SceneParam, voxelDraw), " group=Controls " };
-		sceneTwMembers[1] = { "View Direction", *viewTwType, offsetof(SceneParam, view), " group=Controls " };
-		sceneTwMembers[2] = { "Voxel Resolution", *resTwType, offsetof(SceneParam, voxelRes), " group=Controls " };
-		sceneTwMembers[3] = { "Voxel Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=127 group=Controls " };
-		sceneTwStruct = new TwType;
-		*sceneTwStruct = TwDefineStruct("Scene", sceneTwMembers, 4, sizeof(SceneParam), NULL, NULL);
-
-		isInitialized = true;
-	}
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	shaders = initShaders;
+
+	if(!InitializeAntBar()) return false;
 
 	GenViewTexture(&xTex);
 	GenViewTexture(&yTex);
@@ -160,6 +136,48 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	return true;
 }
 
+bool Scene::InitializeAntBar() {
+	// This should only be done for the first scene
+	if(!isInitialized) {
+		// AntTweakBar Stuff
+		viewTwEnum[0] = { VIEW_X, "Along X" };
+		viewTwEnum[1] = { VIEW_Y, "Along Y" };
+		viewTwEnum[2] = { VIEW_Z, "Along Z" };
+		viewTwType = new TwType;
+		*viewTwType = TwDefineEnum("Views", viewTwEnum, 3);
+
+		resTwEnum[0] = { RES16, "16 ^ 3" };
+		resTwEnum[1] = { RES32, "32 ^ 3" };
+		resTwEnum[2] = { RES64, "64 ^ 3" };
+		resTwEnum[3] = { RES128, "128 ^ 3" };
+		resTwEnum[4] = { RES256, "256 ^ 3" };
+		resTwEnum[5] = { RES512, "512 ^ 3" };
+		resTwType = new TwType;
+		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
+
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_BOOL32, offsetof(SceneParam, voxelDraw), "  " };
+		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
+		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
+		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
+		sceneTwStruct = new TwType;
+		*sceneTwStruct = TwDefineStruct("SceneGPUStruct", sceneTwMembers, 4, sizeof(SceneParam), NULL, NULL);
+
+		sceneOptionTwMembers[0] = { "SkipNoTexture", TW_TYPE_BOOL8, offsetof(SceneOptions, skipNoTexture), "  " };
+		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
+		sceneOptionTwMembers[2] = { "DrawModels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawModels), "  " };
+		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), "  " };
+		sceneOptionsTwStruct = new TwType;
+		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 4, sizeof(SceneOptions), NULL, NULL);
+
+		// Check if AntTweak Setup is ok
+		if(TwGetLastError() != NULL) return false;
+
+		isInitialized = true;
+	}
+
+	return true;
+}
+
 // Generate textures for render to texture
 void Scene::GenViewTexture(GLuint* viewID) {
 	if(*viewID == 0) {
@@ -182,9 +200,16 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
 }
 
+void Scene::UploadParams() {
+	// Upload new params to GPU
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 void Scene::Voxelize() {
 	GLint origViewportSize[4];
-
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
@@ -202,7 +227,7 @@ void Scene::Voxelize() {
 	for(auto model = models->begin(); model != models->end(); model++) {
 
 		// Don't draw models without texture
-		if(skipNoTexture && !(*model)->hasDiffuseTex()) {
+		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
 
@@ -236,7 +261,8 @@ void Scene::Voxelize() {
 }
 
 void Scene::Draw() {
-	if(drawTextures) {
+	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	if(options.drawTextures) {
 		glUseProgram(shaders->singleTriangle);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -254,11 +280,11 @@ void Scene::Draw() {
 		printError("Draw Voxel Textures");
 	} else {
 
-		if(drawModels) {
+		if(options.drawModels) {
 			for(auto model = models->begin(); model != models->end(); model++) {
 
 				// Don't draw models without texture
-				if(skipNoTexture && !(*model)->hasDiffuseTex()) {
+				if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
 					continue;
 				}
 
@@ -289,7 +315,7 @@ void Scene::Draw() {
 			printError("Draw Models");
 		}
 
-		if(drawVoxels) {
+		if(options.drawVoxels) {
 			glEnable(GL_CULL_FACE);
 
 			glUseProgram(voxelModel->GetDrawProgram());
@@ -304,12 +330,7 @@ void Scene::Draw() {
 	}
 }
 
-void Scene::UploadParams() {
-	// Upload new params to GPU
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
+
 
 void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
@@ -338,4 +359,23 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetSceneCB(void* value, void* clientData) {
 	*static_cast<SceneParam*>(value) = static_cast<Scene*>(clientData)->param;
+}
+
+void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
+	Scene* obj = static_cast<Scene*>(clientData);
+	SceneOptions input = *static_cast<const SceneOptions*>(value);
+
+	if(obj->options.skipNoTexture != input.skipNoTexture) {
+		obj->options = input;
+
+		obj->Voxelize();
+	} else {
+		obj->options = input;
+	}
+
+	
+}
+
+void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {
+	*static_cast<SceneOptions*>(value) = static_cast<Scene*>(clientData)->options;
 }

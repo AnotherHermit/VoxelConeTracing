@@ -165,16 +165,11 @@ bool Program::Init() {
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
 
-	TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
+	sceneType = TwDefineEnumFromString("Scene Selection", "Cornell, Sponza");
+	TwAddVarCB(antBar, "Select Scene", sceneType, SetNewSceneCB, GetNewSceneCB, this, " group=Controls ");
 
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponza->GetSkipNoTexturePtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, sponza->GetModelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, sponza->GetVoxelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, sponza->GetTextureDrawPtr(), " group=Controls ");
-	TwAddVarCB(antBar, "Scene", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, sponza, " group=Controls ");
-
-
-	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
+	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -227,6 +222,19 @@ void Program::UploadParams() {
 	printError("program param upload");
 }
 
+void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
+	Program* obj = static_cast<Program*>(clientData);
+	obj->sceneSelect = *static_cast<const GLuint*>(value);
+	TwRemoveVar(obj->antBar, "SceneOptions");
+	TwRemoveVar(obj->antBar, "SceneToGPU");
+	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(obj->antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+}
+
+void TW_CALL Program::GetNewSceneCB(void* value, void* clientData) {
+	*static_cast<GLuint*>(value) = static_cast<Program*>(clientData)->sceneSelect;
+}
+
 void Program::OnEvent(SDL_Event *Event) {
 	switch(Event->type) {
 		case SDL_QUIT:
@@ -275,9 +283,9 @@ void Program::OnKeypress(SDL_Event *Event) {
 			int isBarHidden;
 			TwGetParam(antBar, NULL, "iconified", TW_PARAM_INT32, 1, &isBarHidden);
 			if(isBarHidden) {
-				TwDefine(" Particles iconified=false ");
+				TwDefine(" VCT iconified=false ");
 			} else {
-				TwDefine(" Particles iconified=true ");
+				TwDefine(" VCT iconified=true ");
 			}
 			break;
 		default:

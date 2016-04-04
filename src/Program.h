@@ -61,6 +61,7 @@ private:
 	// Model
 	GLuint sceneSelect;
 	std::vector<Scene*> scenes;
+	TwType sceneType;
 
 	// Program params
 	glm::vec3 cameraStartPos;
@@ -70,6 +71,9 @@ private:
 	void UploadParams();
 
 	Scene* GetCurrentScene() { return scenes[sceneSelect]; }
+
+	static void TW_CALL SetNewSceneCB(const void* value, void* clientData);
+	static void TW_CALL GetNewSceneCB(void* value, void* clientData);
 
 public:
 	Program();
