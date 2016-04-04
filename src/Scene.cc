@@ -15,6 +15,11 @@
 
 #include <iostream>
 
+bool Scene::isInitialized = false;
+TwType* Scene::resTwType = nullptr;
+TwType* Scene::viewTwType = nullptr;
+TwType* Scene::sceneTwStruct = nullptr;
+
 Scene::Scene() {
 	skipNoTexture = false;
 	drawModels = true;
@@ -37,26 +42,33 @@ Scene::Scene() {
 	yTex = 0;
 	zTex = 0;
 
-	// AntTweakBar Stuff
-	viewTwEnum[0] = { VIEW_X, "Along X" };
-	viewTwEnum[1] = { VIEW_Y, "Along Y" };
-	viewTwEnum[2] = { VIEW_Z, "Along Z" };
-	viewTwType = TwDefineEnum("Views", viewTwEnum, 3);
+	// This should only be done for the first scene
+	if(!isInitialized) {
+		// AntTweakBar Stuff
+		viewTwEnum[0] = { VIEW_X, "Along X" };
+		viewTwEnum[1] = { VIEW_Y, "Along Y" };
+		viewTwEnum[2] = { VIEW_Z, "Along Z" };
+		viewTwType = new TwType;
+		*viewTwType = TwDefineEnum("Views", viewTwEnum, 3);
 
-	resTwEnum[0] = { RES16, "16 ^ 3" };
-	resTwEnum[1] = { RES32, "32 ^ 3" };
-	resTwEnum[2] = { RES64, "64 ^ 3" };
-	resTwEnum[3] = { RES128, "128 ^ 3" };
-	resTwEnum[4] = { RES256, "256 ^ 3" };
-	resTwEnum[5] = { RES512, "512 ^ 3" };
-	resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
+		resTwEnum[0] = { RES16, "16 ^ 3" };
+		resTwEnum[1] = { RES32, "32 ^ 3" };
+		resTwEnum[2] = { RES64, "64 ^ 3" };
+		resTwEnum[3] = { RES128, "128 ^ 3" };
+		resTwEnum[4] = { RES256, "256 ^ 3" };
+		resTwEnum[5] = { RES512, "512 ^ 3" };
+		resTwType = new TwType;
+		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-	sceneTwMembers[0] = { "Draw Voxel Data", TW_TYPE_BOOL32, offsetof(SceneParam, voxelDraw), " group=Controls " };
-	sceneTwMembers[1] = { "View Direction", viewTwType, offsetof(SceneParam, view), " group=Controls " };
-	sceneTwMembers[2] = { "Voxel Resolution", resTwType, offsetof(SceneParam, voxelRes), " group=Controls " };
-	sceneTwMembers[3] = { "Voxel Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=127 group=Controls " };
+		sceneTwMembers[0] = { "Draw Voxel Data", TW_TYPE_BOOL32, offsetof(SceneParam, voxelDraw), " group=Controls " };
+		sceneTwMembers[1] = { "View Direction", *viewTwType, offsetof(SceneParam, view), " group=Controls " };
+		sceneTwMembers[2] = { "Voxel Resolution", *resTwType, offsetof(SceneParam, voxelRes), " group=Controls " };
+		sceneTwMembers[3] = { "Voxel Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=127 group=Controls " };
+		sceneTwStruct = new TwType;
+		*sceneTwStruct = TwDefineStruct("Scene", sceneTwMembers, 4, sizeof(SceneParam), NULL, NULL);
 
-	sceneTwStruct = TwDefineStruct("Scene", sceneTwMembers, 4, sizeof(SceneParam), NULL, NULL);
+		isInitialized = true;
+	}
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {

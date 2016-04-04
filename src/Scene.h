@@ -80,9 +80,10 @@ private:
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
 	TwStructMember sceneTwMembers[4];
-	TwType resTwType;
-	TwType viewTwType;
-	TwType sceneTwStruct;
+	static TwType* resTwType;
+	static TwType* viewTwType;
+	static TwType* sceneTwStruct;
+	static bool isInitialized;
 
 public:
 	Scene();
@@ -102,7 +103,7 @@ public:
 	void Voxelize();
 
 	// AntTweakBar
-	TwType GetSceneTwType() { return sceneTwStruct; }
+	static TwType GetSceneTwType() { return *sceneTwStruct; }
 	static void TW_CALL SetSceneCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneCB(void* value, void* clientData);
 };

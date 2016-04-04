@@ -154,26 +154,26 @@ bool Program::Init() {
 	cornell->Voxelize();
 	scenes.push_back(cornell);
 	
-	//Scene* sponza = new Scene();
-	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	//sponza->Voxelize();
-	//scenes.push_back(sponza);
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	sponza->Voxelize();
+	scenes.push_back(sponza);
 	
-
-
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, GetCurrentScene()->GetSkipNoTexturePtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, GetCurrentScene()->GetModelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, GetCurrentScene()->GetVoxelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, GetCurrentScene()->GetTextureDrawPtr(), " group=Controls ");
-	TwAddVarCB(antBar, "Scene", GetCurrentScene()->GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Controls ");
 
-	
-	//TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
+	TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
+
+	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, sponza->GetSkipNoTexturePtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, sponza->GetModelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, sponza->GetVoxelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, sponza->GetTextureDrawPtr(), " group=Controls ");
+	TwAddVarCB(antBar, "Scene", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, sponza, " group=Controls ");
+
+
 	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
