@@ -69,6 +69,8 @@ private:
 	// Methods
 	void UploadParams();
 
+	Scene* GetCurrentScene() { return scenes[sceneSelect]; }
+
 public:
 	Program();
 

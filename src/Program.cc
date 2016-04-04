@@ -166,15 +166,14 @@ bool Program::Init() {
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
 	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
-	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, scenes[0]->GetModelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, scenes[0]->GetVoxelDrawPtr(), " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, &useOrtho, " group=Controls ");
-	TwAddVarRW(antBar, "Draw Voxel Data", TW_TYPE_UINT32, scenes[0]->GetVoxelDataDrawPtr(), " min=0 max=1 group=Controls ");
-	TwAddVarRW(antBar, "Select View Cornell", TW_TYPE_UINT32, scenes[0]->GetViewPtr(), " min=0 max=2 group=Controls ");
-	TwAddVarRW(antBar, "Select Voxel Layer", TW_TYPE_UINT32, scenes[0]->GetLayerPtr(), " min=0 max=127 group=Controls ");
-	TwAddVarRW(antBar, "Select Voxel Res", TW_TYPE_UINT32, scenes[0]->GetVoxelResPtr(), " min=16 max=512 step=16 group=Controls ");
+	TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, GetCurrentScene()->GetSkipNoTexturePtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Models", TW_TYPE_BOOL8, GetCurrentScene()->GetModelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxels", TW_TYPE_BOOL8, GetCurrentScene()->GetVoxelDrawPtr(), " group=Controls ");
+	TwAddVarRW(antBar, "Draw Voxel Textures", TW_TYPE_BOOL8, GetCurrentScene()->GetTextureDrawPtr(), " group=Controls ");
+	TwAddVarCB(antBar, "Scene", GetCurrentScene()->GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Controls ");
+
+	
 	//TwAddVarRW(antBar, "Select Scene", TW_TYPE_UINT32, &sceneSelect, " min=0 max=1 group=Controls ");
-	//TwAddVarRW(antBar, "Skip No Texture", TW_TYPE_BOOL8, scenes[1]->GetSkipNoTexturePtr(), " group=Controls ");
 	//TwAddVarRW(antBar, "Select View Sponza", TW_TYPE_UINT32, scenes[1]->GetViewPtr(), " min=0 max=2 group=Controls ");
 
 	// Check if AntTweak Setup is ok
@@ -195,9 +194,7 @@ void Program::Update() {
 	UploadParams();
 
 	// Update the camera
-	if(!useOrtho) {
-		cam->UpdateCamera();
-	}
+	cam->UpdateCamera();
 
 	printError("after update");
 }
@@ -205,11 +202,7 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if(useOrtho) {
-		scenes[sceneSelect]->DrawTextures();
-	} else {
-		scenes[sceneSelect]->Draw();
-	}
+	GetCurrentScene()->Draw();
 
 	TwDraw();
 
@@ -273,11 +266,6 @@ void Program::OnKeypress(SDL_Event *Event) {
 			isRunning = false;
 			break;
 		case SDLK_SPACE:
-			useOrtho = !useOrtho;
-			break;
-		case SDLK_t:
-			drawVoxelOverlay = !drawVoxelOverlay;
-			scenes[sceneSelect]->SetDrawVoxels(drawVoxelOverlay);
 			break;
 		case SDLK_f:
 			cam->TogglePause();

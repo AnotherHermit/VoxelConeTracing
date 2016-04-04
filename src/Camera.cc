@@ -92,7 +92,7 @@ void Camera::UpdateCamera() {
 		Update();
 		UploadParams();
 	}
-	needUpdate = true; // Should be false later
+	needUpdate = false;
 }
 
 void Camera::MoveForward(GLfloat deltaT) {

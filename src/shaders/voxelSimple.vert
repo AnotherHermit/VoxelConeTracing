@@ -47,6 +47,6 @@ void main(void)
 	voxelPos = vec3(float(xPos) / size, float(yPos) / size, float(zPos) / size);
 
 	exNormal = mat3(cam.WTVmatrix) * inNormal;
-	gl_Position = cam.VTPmatrix * cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition + voxelPos * scene.voxelRes * 2.0f + vec3(1.0f), 1.0f);
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition / size + 2.0f * voxelPos - vec3(1.0f), 1.0f);
 }
 
