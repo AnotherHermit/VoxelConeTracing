@@ -56,8 +56,6 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * numIndices, indexData, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	printError("Set standard model data init");
-
 	// Set the GPU pointers for drawing 
 	glUseProgram(drawProgram);
 	glBindVertexArray(drawVAO);
@@ -76,8 +74,6 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	printError("Set standard model data draw");
 
 	if(voxelProgram != 0) {
 		// Set the GPU pointers for voxelization
@@ -99,8 +95,6 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 
 		glBindVertexArray(0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		printError("Set standard model data voxel");
 	}
 }
 
@@ -137,8 +131,6 @@ void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	printError("Set texture data");
 }
 
 bool Model::hasDiffuseTex() {
@@ -152,6 +144,4 @@ bool Model::hasMaskTex() {
 void Model::Draw() {
 	// Draw
 	glDrawElements(GL_TRIANGLES, (GLsizei)nIndices, GL_UNSIGNED_INT, 0L);
-
-	printError("Draw Model");
 }

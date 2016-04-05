@@ -23,6 +23,7 @@ struct SceneParam {
 	GLuint view;
 	GLuint voxelRes;
 	GLuint voxelLayer;
+	GLuint mipLevel;
 };
 
 // Scene Options struct
@@ -87,7 +88,7 @@ private:
 	// AntTweakBar Stuff
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
-	TwStructMember sceneTwMembers[4];
+	TwStructMember sceneTwMembers[5];
 	TwStructMember sceneOptionTwMembers[4];
 	static TwType* resTwType;
 	static TwType* viewTwType;

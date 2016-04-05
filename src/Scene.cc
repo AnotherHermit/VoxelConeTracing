@@ -28,10 +28,11 @@ Scene::Scene() {
 	options.drawVoxels = false;
 	options.drawTextures = false;
 
-	param.voxelRes = 128;
+	param.voxelRes = 256;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
+	param.mipLevel = 0;
 
 	maxVertex = nullptr;
 	minVertex = nullptr;
@@ -95,15 +96,11 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glUseProgram(shaders->voxel);
 	glUniform1i(glGetUniformLocation(shaders->voxel, "voxelData"), 3);
 
-	printError("Upload Scene Uniforms for Shaders");
-
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneParam), NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	printError("Upload Scene Buffer");
 
 	ModelLoader modelLoader;
 	if(!modelLoader.LoadScene(path, models, shaders, &maxVertex, &minVertex)) {
@@ -131,8 +128,6 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	UploadParams();
 
-	printError("init Scene");
-
 	return true;
 }
 
@@ -159,8 +154,9 @@ bool Scene::InitializeAntBar() {
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
+		sceneTwMembers[4] = { "MipLevel", TW_TYPE_UINT32, offsetof(SceneParam, mipLevel), " min=0 max=9  " };
 		sceneTwStruct = new TwType;
-		*sceneTwStruct = TwDefineStruct("SceneGPUStruct", sceneTwMembers, 4, sizeof(SceneParam), NULL, NULL);
+		*sceneTwStruct = TwDefineStruct("SceneGPUStruct", sceneTwMembers, 5, sizeof(SceneParam), NULL, NULL);
 
 		sceneOptionTwMembers[0] = { "SkipNoTexture", TW_TYPE_BOOL8, offsetof(SceneOptions, skipNoTexture), "  " };
 		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
@@ -184,9 +180,10 @@ void Scene::GenViewTexture(GLuint* viewID) {
 		glGenTextures(1, viewID);
 	}
 	glBindTexture(GL_TEXTURE_2D, *viewID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 // Create the 3D texture that contains the voxel data
@@ -195,9 +192,10 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 		glGenTextures(1, texID);
 	}
 	glBindTexture(GL_TEXTURE_3D, *texID);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
+	glGenerateMipmap(GL_TEXTURE_3D);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 void Scene::UploadParams() {
@@ -252,12 +250,17 @@ void Scene::Voxelize() {
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
-	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
 
-	printError("Voxelize");
+	// Generate mipmaps
+	glGenerateTextureMipmap(xTex);
+	glGenerateTextureMipmap(yTex);
+	glGenerateTextureMipmap(zTex);
+	glBindTexture(GL_TEXTURE_3D, voxelTex);
+	glGenerateMipmap(GL_TEXTURE_3D);
 }
 
 void Scene::Draw() {
@@ -276,8 +279,6 @@ void Scene::Draw() {
 		glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), param.view);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		printError("Draw Voxel Textures");
 	} else {
 
 		if(options.drawModels) {
@@ -312,7 +313,6 @@ void Scene::Draw() {
 
 				(*model)->Draw();
 			}
-			printError("Draw Models");
 		}
 
 		if(options.drawVoxels) {
@@ -325,7 +325,6 @@ void Scene::Draw() {
 			glBindTexture(GL_TEXTURE_3D, voxelTex);
 
 			glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)voxelModel->GetNumIndices(), GL_UNSIGNED_INT, 0L, param.voxelRes*param.voxelRes*(param.voxelRes - 1));
-			printError("Draw Voxel Overlay");
 		}
 	}
 }
@@ -339,6 +338,7 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 	obj->param.voxelDraw = input.voxelDraw;
 	obj->param.voxelLayer = input.voxelLayer;
 	obj->param.view = input.view;
+	obj->param.mipLevel = input.mipLevel;
 
 	// Update texture if new size
 	if(input.voxelRes != obj->param.voxelRes) {
@@ -372,8 +372,6 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 	} else {
 		obj->options = input;
 	}
-
-	
 }
 
 void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {

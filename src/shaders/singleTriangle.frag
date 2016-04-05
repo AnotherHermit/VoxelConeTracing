@@ -20,6 +20,7 @@ struct SceneParams {
 	uint view;
 	uint voxelRes;
 	uint voxelLayer;
+	uint mipLevel;
 };
 
 layout (std140, binding = 11) uniform SceneBuffer {
@@ -30,8 +31,8 @@ void main()
 {	
 
 	if(scene.voxelDraw == 1) {
-		outColor = texture(usedView, exTexCoords);
+		outColor = textureLod(usedView, exTexCoords, float(scene.mipLevel));
 	} else {
-		outColor = texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1)));
+		outColor = textureLod(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1)), float(scene.mipLevel));
 	}
 }

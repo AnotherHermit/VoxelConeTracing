@@ -32,7 +32,6 @@ bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, Sh
 	shapes.clear();
 	materials.clear();
 
-	printError("init Model");
 	return true;
 }
 
@@ -150,7 +149,6 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 	// Dont need the data anymore since it is now handled by OpenGL
 	free(textureData);
 
-	printError("Load Texture");
 	return texID;
 }
 

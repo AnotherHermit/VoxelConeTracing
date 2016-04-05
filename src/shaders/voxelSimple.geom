@@ -29,10 +29,25 @@ layout (std140, binding = 10) uniform CameraBuffer {
 	Camera cam;
 };
 
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+	uint mipLevel;
+};
+
+layout (std140, binding = 11) uniform SceneBuffer {
+	SceneParams scene;
+};
+
+
 void main()
 {
 	vec4 tempPos;
-	vec4 color = texture(voxelData, voxelPos[0]);
+	vec4 color = textureLod(voxelData, voxelPos[0], float(scene.mipLevel));
 
 	if(color.a < 0.5f) {
 		return;

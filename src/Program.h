@@ -1,12 +1,14 @@
-///////////////////////////////////////
+﻿///////////////////////////////////////
 //
 //	Computer Graphics TSBK03
-//	Conrad Wahl�n - conwa099
+//	Conrad Wahlén - conwa099
 //
 ///////////////////////////////////////
 
 #ifndef PROGRAM_H
 #define PROGRAM_H
+
+#include <Windows.h>
 
 #ifdef __APPLE__
 #	include <OpenGL/gl3.h>
@@ -74,6 +76,7 @@ private:
 
 	static void TW_CALL SetNewSceneCB(const void* value, void* clientData);
 	static void TW_CALL GetNewSceneCB(void* value, void* clientData);
+	
 
 public:
 	Program();
@@ -93,6 +96,7 @@ public:
 	void Render();
 
 	void Clean();
+
 };
 
 #endif // PROGRAM_H

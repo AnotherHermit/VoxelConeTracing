@@ -1,7 +1,7 @@
-///////////////////////////////////////
+﻿///////////////////////////////////////
 //
 //	Computer Graphics TSBK03
-//	Conrad Wahl�n - conwa099
+//	Conrad Wahlén - conwa099
 //
 ///////////////////////////////////////
 
@@ -67,18 +67,47 @@ void Program::timeUpdate() {
 	FPS = 1.0f / time.getLapTime();
 }
 
+void APIENTRY openglCallbackFunction(
+	GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam) {
+	(void)source; (void)type; (void)id;
+	(void)severity; (void)length; (void)userParam;
+
+	switch(id) {
+		case 131185:
+			return;
+		case 131218:
+			return;
+		default:
+			break;
+	}
+	
+	fprintf(stderr, "%s\n", message);
+	if(severity == GL_DEBUG_SEVERITY_HIGH) {
+		fprintf(stderr, "Aborting...\n");
+		abort();
+	}
+}
+
 bool Program::Init() {
 	// SDL, glew and OpenGL init
 	if(SDL_Init(SDL_INIT_VIDEO) != 0) {
 		std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
 		return false;
 	}
+
 	screen = SDL_CreateWindow("Voxel Cone Tracing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, winWidth, winHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	if(screen == 0) {
 		std::cerr << "Failed to set Video Mode: " << SDL_GetError() << std::endl;
 		return false;
 	}
 
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	glcontext = SDL_GL_CreateContext(screen);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
@@ -89,6 +118,22 @@ bool Program::Init() {
 		return false;
 	}
 #endif
+
+#ifdef DEBUG
+	// Enable the debug callback
+	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback(openglCallbackFunction, nullptr);
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
+#endif
+
+	// Activate depth test and blend for masking textures
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glEnable(GL_TEXTURE_3D);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
 
 	dumpInfo();
 
@@ -102,39 +147,19 @@ bool Program::Init() {
 
 
 	// Load shaders for drawing
-	GLint err;
 	shaders.simple = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
-	glGetProgramiv(shaders.simple, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
 	shaders.texture = loadShaders("src/shaders/textureModel.vert", "src/shaders/textureModel.frag");
-	glGetProgramiv(shaders.texture, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
 	shaders.mask = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
-	glGetProgramiv(shaders.mask, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
 
 	// Load shaders for voxelization
 	shaders.voxelize = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
-	glGetProgramiv(shaders.voxelize, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
 	shaders.voxelizeTexture = loadShadersG("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag", "src/shaders/voxelizationTexture.geom");
-	glGetProgramiv(shaders.voxelizeTexture, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
 
 	// Single triangle shader for deferred shading etc.
 	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
-	glGetProgramiv(shaders.singleTriangle, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
 
 	// Draw voxels from 3D texture
 	shaders.voxel = loadShadersG("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag", "src/shaders/voxelSimple.geom");
-	glGetProgramiv(shaders.voxel, GL_LINK_STATUS, &err);
-	if(err == GL_FALSE) return false;
-
-	printError("after shader load");
 
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -146,7 +171,6 @@ bool Program::Init() {
 	// Set up the camera
 	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
 	if(!cam->Init()) return false;
-
 
 	// Load scenes
 	Scene* cornell = new Scene();
@@ -176,13 +200,6 @@ bool Program::Init() {
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
 
-	// Activate depth test and blend for masking textures
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
-
 	return true;
 }
 
@@ -192,8 +209,6 @@ void Program::Update() {
 
 	// Update the camera
 	cam->UpdateCamera();
-
-	printError("after update");
 }
 
 void Program::Render() {
@@ -202,8 +217,6 @@ void Program::Render() {
 	GetCurrentScene()->Draw();
 
 	TwDraw();
-
-	printError("after display");
 
 	SDL_GL_SwapWindow(screen);
 }
@@ -220,8 +233,6 @@ void Program::UploadParams() {
 	glBindBuffer(GL_UNIFORM_BUFFER, programBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(ProgramStruct), &param);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	printError("program param upload");
 }
 
 void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {

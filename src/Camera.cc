@@ -48,7 +48,6 @@ bool Camera::Init() {
 	// Set starting WTVmatrix
 	UploadParams();
 
-	printError("camera init");
 	return true;
 }
 
