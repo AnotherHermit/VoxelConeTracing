@@ -9,6 +9,7 @@
 
 in vec4 outColor;
 in vec3 outNormal;
+in vec4 outPosition;
 out vec4 finalColor;
 
 struct Camera {
@@ -23,12 +24,17 @@ layout (std140, binding = 10) uniform CameraBuffer {
 
 void main()
 {	
+	vec3 n = normalize(outNormal);
+	vec3 s = normalize(mat3(cam.WTVmatrix) * vec3(0.58, 0.58, 0.58));
+	vec3 r = normalize(2 * n * dot(s,n) - s);
+	vec3 v = normalize(-(outPosition.xyz / outPosition.w));
+
 	// Calculate diffuse light
-	vec3 light = mat3(cam.WTVmatrix) * vec3(0.58, 0.58, 0.58);
-	float shade = max(dot(normalize(outNormal), light), 0.1);
+	float diff = max(0.2, dot(s, n));
+	float spec = max(0.0, pow(dot(r, v), 5));
 
 	// Set constant color for textureless models
-	vec3 color = outColor.xyz * shade;
+	vec3 color = outColor.xyz * (diff + spec);
 
 	finalColor = vec4(color, 1.0f);
 }

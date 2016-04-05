@@ -61,23 +61,19 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	// Set the GPU pointers for drawing 
 	glUseProgram(drawProgram);
 	glBindVertexArray(drawVAO);
-	printError("Set standard model data draw1");
+
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
 	GLuint vPos = glGetAttribLocation(drawProgram, "inPosition");
 	glEnableVertexAttribArray(vPos);
 	glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	printError("Set standard model data draw2");
-	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
-	printError("Set standard model data draw31");
-	GLuint vNorm = glGetAttribLocation(drawProgram, "inNormal");
-	printError("Set standard model data draw32");
-	glEnableVertexAttribArray(vNorm);
-	printError("Set standard model data draw33");
-	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	printError("Set standard model data draw3");
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
 
+	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
+	GLuint vNorm = glGetAttribLocation(drawProgram, "inNormal");
+	glEnableVertexAttribArray(vNorm);
+	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 

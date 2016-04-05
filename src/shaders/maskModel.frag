@@ -40,9 +40,17 @@ void main()
 	// Set constant color for textured models
 	vec3 color = texture(diffuseUnit, exTexCoords).rgb;
 	
+	vec3 n = normalize(exNormal);
+	vec3 s = normalize(mat3(cam.WTVmatrix) * vec3(0.58, 0.58, 0.58));
+	vec3 r = normalize(2 * n * dot(s,n) - s);
+	vec3 v = normalize(-(exPosition.xyz / exPosition.w));
+
 	// Calculate diffuse light
-	vec3 light = mat3(cam.WTVmatrix) * vec3(0.707, 0.707, 0);
-	float shade = max(dot(normalize(exNormal), light), 0.1);
+	float diff = max(0.2, dot(s, n));
+	float spec = max(0.0, pow(dot(r, v), 5));
+
+	// Set constant color for textureless models
+	float shade = diff + spec;
 
 	// Apply light to texture
 	vec3 shadedColor = color * shade;

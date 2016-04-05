@@ -151,14 +151,16 @@ bool Program::Init() {
 	// Load scenes
 	Scene* cornell = new Scene();
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
-	cornell->Voxelize();
 	scenes.push_back(cornell);
 	
 	Scene* sponza = new Scene();
 	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	sponza->Voxelize();
 	scenes.push_back(sponza);
 	
+	// Initial Voxelization of the scenes
+	cornell->Voxelize();
+	sponza->Voxelize();
+
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
