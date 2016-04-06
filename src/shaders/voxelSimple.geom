@@ -43,11 +43,37 @@ layout (std140, binding = 11) uniform SceneBuffer {
 	SceneParams scene;
 };
 
+uvec4 convertIntToVec(uint input) {
+	uint r,g,b,a;
+	
+	b = input & 0xFF;
+	input = input >> 8;
+	g = input & 0xFF;
+	input = input >> 8;
+	r = input & 0xFF;
+	input = input >> 8;
+	a = input;
+
+	return uvec4(r,g,b,a);
+}
+
+uint convertVecToInt(uvec4 input) {
+	uint result = input.a;
+
+	result = result << 8;
+	result |= input.r;
+	result = result << 8;
+	result |= input.g;
+	result = result << 8;
+	result |= input.b;
+
+	return result;
+}
 
 void main()
 {
 	vec4 tempPos;
-	uvec4 color = texture(voxelData, voxelPos[0]);
+	uvec4 color = convertIntToVec(texture(voxelData, voxelPos[0]).r);
 
 	if(color.a < 128) {
 		return;

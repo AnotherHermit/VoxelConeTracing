@@ -194,7 +194,7 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 	}
 	glGenTextures(1, texID);
 	glBindTexture(GL_TEXTURE_3D, *texID);
-	glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8UI, param.voxelRes, param.voxelRes, param.voxelRes);
+	glTexStorage3D(GL_TEXTURE_3D, 1, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
@@ -221,7 +221,7 @@ void Scene::Voxelize() {
 	glClearTexImage(xTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(yTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(zTex, 0, GL_RGBA, GL_FLOAT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glClearTexImage(voxelTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, NULL);
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -245,7 +245,7 @@ void Scene::Voxelize() {
 		glBindImageTexture(0, xTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(1, yTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(2, zTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8UI);
+		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);
 
 		(*model)->Draw();
 
