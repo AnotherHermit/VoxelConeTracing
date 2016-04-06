@@ -10,7 +10,7 @@
 in vec2 exTexCoords;
 out vec4 outColor;
 
-uniform sampler2D usedView;
+uniform usampler2D usedView;
 uniform usampler3D voxelData;
 
 struct SceneParams {
@@ -56,7 +56,7 @@ uint convertVecToInt(uvec4 input) {
 
 void main()
 {	
-	vec4 color2D = texture(usedView, exTexCoords);
+	vec4 color2D = vec4(convertIntToVec(texture(usedView, exTexCoords).r)) / 255.0f;
 	vec4 color3D = vec4(convertIntToVec(texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1))).r)) / 255.0f;
 	outColor = color2D * (scene.voxelDraw) + color3D * (1 - (scene.voxelDraw));
 }
