@@ -28,7 +28,7 @@ Scene::Scene() {
 	options.drawVoxels = false;
 	options.drawTextures = false;
 
-	param.voxelRes = 256;
+	param.voxelRes = 64;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
@@ -161,7 +161,7 @@ bool Scene::InitializeAntBar() {
 		sceneOptionTwMembers[0] = { "SkipNoTexture", TW_TYPE_BOOL8, offsetof(SceneOptions, skipNoTexture), "  " };
 		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
 		sceneOptionTwMembers[2] = { "DrawModels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawModels), "  " };
-		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), "  " };
+		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), " key=t " };
 		sceneOptionsTwStruct = new TwType;
 		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 4, sizeof(SceneOptions), NULL, NULL);
 
@@ -176,25 +176,26 @@ bool Scene::InitializeAntBar() {
 
 // Generate textures for render to texture
 void Scene::GenViewTexture(GLuint* viewID) {
-	if(*viewID == 0) {
-		glGenTextures(1, viewID);
+	if(*viewID != 0) {
+		glDeleteTextures(1, viewID);
 	}
+	glGenTextures(1, viewID);
 	glBindTexture(GL_TEXTURE_2D, *viewID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, param.voxelRes, param.voxelRes);
+	//glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 // Create the 3D texture that contains the voxel data
 void Scene::GenVoxelTexture(GLuint* texID) {
-	if(*texID == 0) {
-		glGenTextures(1, texID);
+	if(*texID != 0) {
+		glDeleteTextures(1, texID);
 	}
+	glGenTextures(1, texID);
 	glBindTexture(GL_TEXTURE_3D, *texID);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, param.voxelRes, param.voxelRes, param.voxelRes, 0, GL_RGBA, GL_FLOAT, NULL);
-	glGenerateMipmap(GL_TEXTURE_3D);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8UI, param.voxelRes, param.voxelRes, param.voxelRes);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
@@ -220,7 +221,7 @@ void Scene::Voxelize() {
 	glClearTexImage(xTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(yTex, 0, GL_RGBA, GL_FLOAT, NULL);
 	glClearTexImage(zTex, 0, GL_RGBA, GL_FLOAT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RGBA, GL_FLOAT, NULL);
+	glClearTexImage(voxelTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, NULL);
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -244,7 +245,7 @@ void Scene::Voxelize() {
 		glBindImageTexture(0, xTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(1, yTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glBindImageTexture(2, zTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8UI);
 
 		(*model)->Draw();
 
@@ -256,17 +257,16 @@ void Scene::Voxelize() {
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
 
 	// Generate mipmaps
-	glGenerateTextureMipmap(xTex);
-	glGenerateTextureMipmap(yTex);
-	glGenerateTextureMipmap(zTex);
-	glBindTexture(GL_TEXTURE_3D, voxelTex);
-	glGenerateMipmap(GL_TEXTURE_3D);
+	//glGenerateTextureMipmap(xTex);
+	//glGenerateTextureMipmap(yTex);
+	//glGenerateTextureMipmap(zTex);
 }
 
 void Scene::Draw() {
 	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	if(options.drawTextures) {
 		glUseProgram(shaders->singleTriangle);
+		glBindVertexArray(0);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, xTex);

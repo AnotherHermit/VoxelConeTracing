@@ -10,7 +10,7 @@
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-uniform sampler3D voxelData;
+uniform usampler3D voxelData;
 
 in vec3 voxelPos[];
 in vec3 exNormal[];
@@ -47,9 +47,9 @@ layout (std140, binding = 11) uniform SceneBuffer {
 void main()
 {
 	vec4 tempPos;
-	vec4 color = textureLod(voxelData, voxelPos[0], float(scene.mipLevel));
+	uvec4 color = texture(voxelData, voxelPos[0]);
 
-	if(color.a < 0.5f) {
+	if(color.a < 128) {
 		return;
 	}
 
@@ -58,7 +58,7 @@ void main()
 		outPosition = tempPos;
 		gl_Position = cam.VTPmatrix * tempPos;
 		outNormal = exNormal[i];
-		outColor = color;
+		outColor = vec4(color) / 255.0f;
 		EmitVertex();
 	}
 	
