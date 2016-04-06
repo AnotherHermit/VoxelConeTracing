@@ -177,13 +177,13 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	/*Scene* sponza = new Scene();
+	Scene* sponza = new Scene();
 	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
 	scenes.push_back(sponza);
-	*/
+	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
-	//sponza->Voxelize();
+	sponza->Voxelize();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");

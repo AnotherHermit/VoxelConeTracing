@@ -11,9 +11,7 @@ flat in uint domInd;
 
 uniform vec3 diffColor;
 
-uniform layout(R32UI) uimage2D xView;
-uniform layout(R32UI) uimage2D yView;
-uniform layout(R32UI) uimage2D zView;
+uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
 
 struct SceneParams {
@@ -61,14 +59,13 @@ void main()
 	// Set constant color for textureless models
 	uint color = convertVecToInt(uvec4(uvec3(diffColor*255), 255));
 
+	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), color);
+
 	if(domInd == 0) {
-		imageAtomicMax(xView, ivec2(gl_FragCoord.xy), color);
 		imageAtomicMax(voxelData, ivec3(gl_FragCoord.z * scene.voxelRes,gl_FragCoord.y, scene.voxelRes - gl_FragCoord.x), color);
 	} else if (domInd == 1) {
-		imageAtomicMax(yView, ivec2(gl_FragCoord.xy), color);
 		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, scene.voxelRes * gl_FragCoord.z, scene.voxelRes - gl_FragCoord.y), color);
 	} else {
-		imageAtomicMax(zView, ivec2(gl_FragCoord.xy), color);
 		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, gl_FragCoord.y, scene.voxelRes * gl_FragCoord.z), color);
 	}
 }

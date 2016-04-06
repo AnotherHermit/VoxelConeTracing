@@ -74,7 +74,7 @@ private:
 	GLuint voxelFBO;
 
 	// Voxel view textures
-	GLuint xTex, yTex, zTex;
+	GLuint voxel2DTex;
 	GLuint voxelTex;
 
 	// Scene information

@@ -40,10 +40,8 @@ Scene::Scene() {
 	models = new std::vector<Model*>();
 	voxelModel = new Model();
 
+	voxel2DTex = 0;
 	voxelTex = 0;
-	xTex = 0;
-	yTex = 0;
-	zTex = 0;
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {
@@ -52,10 +50,7 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	if(!InitializeAntBar()) return false;
 
-	GenViewTexture(&xTex);
-	GenViewTexture(&yTex);
-	GenViewTexture(&zTex);
-
+	GenViewTexture(&voxel2DTex);
 	GenVoxelTexture(&voxelTex);
 
 	// Init the framebuffer for drawing
@@ -75,21 +70,18 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxelize);
-	glUniform1i(glGetUniformLocation(shaders->voxelize, "xView"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxelize, "yView"), 1);
-	glUniform1i(glGetUniformLocation(shaders->voxelize, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelTextures"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelData"), 3);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxelizeTexture);
-	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "xView"), 0);
-	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "yView"), 1);
-	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "zView"), 2);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "diffuseUnit"), 0);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelTextures"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "diffuseUnit"), 4);
 
 	// Set constant uniforms for simple triangle drawing
 	glUseProgram(shaders->singleTriangle);
+	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelTextures"), 2);
 	glUniform1i(glGetUniformLocation(shaders->singleTriangle, "voxelData"), 3);
 
 	// Set constant uniforms for drawing the voxel overlay
@@ -180,11 +172,10 @@ void Scene::GenViewTexture(GLuint* viewID) {
 		glDeleteTextures(1, viewID);
 	}
 	glGenTextures(1, viewID);
-	glBindTexture(GL_TEXTURE_2D, *viewID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, param.voxelRes, param.voxelRes);
-	//glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, *viewID);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_R32UI, param.voxelRes, param.voxelRes, 3);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 // Create the 3D texture that contains the voxel data
@@ -218,10 +209,8 @@ void Scene::Voxelize() {
 	glViewport(0, 0, param.voxelRes, param.voxelRes);
 	glDisable(GL_CULL_FACE);
 
-	glClearTexImage(xTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(yTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(zTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, NULL);
+	glClearTexImage(voxel2DTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -235,16 +224,14 @@ void Scene::Voxelize() {
 
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
-			glActiveTexture(GL_TEXTURE4);
+			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
 		} else {
 			glm::vec3 diffColor = (*model)->GetDiffColor();
 			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 		}
 
-		glBindImageTexture(0, xTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-		glBindImageTexture(1, yTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-		glBindImageTexture(2, zTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+		glBindImageTexture(2, voxel2DTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
 		(*model)->Draw();
@@ -255,11 +242,6 @@ void Scene::Voxelize() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-
-	// Generate mipmaps
-	//glGenerateTextureMipmap(xTex);
-	//glGenerateTextureMipmap(yTex);
-	//glGenerateTextureMipmap(zTex);
 }
 
 void Scene::Draw() {
@@ -268,15 +250,10 @@ void Scene::Draw() {
 		glUseProgram(shaders->singleTriangle);
 		glBindVertexArray(0);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, xTex);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, yTex);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, zTex);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, voxel2DTex);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_3D, voxelTex);
-		glUniform1i(glGetUniformLocation(shaders->singleTriangle, "usedView"), param.view);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	} else {
@@ -344,9 +321,7 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 	if(input.voxelRes != obj->param.voxelRes) {
 		obj->param.voxelRes = input.voxelRes;
 
-		obj->GenViewTexture(&obj->xTex);
-		obj->GenViewTexture(&obj->yTex);
-		obj->GenViewTexture(&obj->zTex);
+		obj->GenViewTexture(&obj->voxel2DTex);
 		obj->GenVoxelTexture(&obj->voxelTex);
 
 		obj->UploadParams();
