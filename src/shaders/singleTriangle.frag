@@ -23,7 +23,7 @@ struct SceneParams {
 	uint mipLevel;
 };
 
-layout (std140, binding = 11) uniform SceneBuffer {
+layout (std140, binding = 0) uniform SceneBuffer {
 	SceneParams scene;
 };
 

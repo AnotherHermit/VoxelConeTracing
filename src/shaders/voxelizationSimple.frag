@@ -13,6 +13,7 @@ uniform vec3 diffColor;
 
 uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
+uniform layout(R32UI) uimage3D voxelDataNextLevel;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -23,9 +24,28 @@ struct SceneParams {
 	uint voxelLayer;
 };
 
-layout (std140, binding = 11) uniform SceneBuffer {
+layout (std140, binding = 0) uniform SceneBuffer {
 	SceneParams scene;
 };
+
+struct DrawElementsIndirectCommand {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint baseVertex;
+	uint baseInstance;
+};
+
+// Atomic counter of rendered particles;
+layout(std430, binding = 0) buffer DrawCmdBuffer {
+	DrawElementsIndirectCommand drawCmd;
+};
+
+layout(std430, binding = 1) writeonly buffer SparseBuffer {
+	int sparseList[];
+};
+
+ivec3 voxelCoord;
 
 uvec4 convertIntToVec(uint input) {
 	uint r,g,b,a;
@@ -61,11 +81,30 @@ void main()
 
 	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), color);
 
+	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);
+
 	if(domInd == 0) {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.z * scene.voxelRes,gl_FragCoord.y, scene.voxelRes - gl_FragCoord.x), color);
+		voxelCoord = ivec3(depthCoord, gl_FragCoord.y, scene.voxelRes - gl_FragCoord.x);
 	} else if (domInd == 1) {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, scene.voxelRes * gl_FragCoord.z, scene.voxelRes - gl_FragCoord.y), color);
+		voxelCoord = ivec3(gl_FragCoord.x, depthCoord, scene.voxelRes - gl_FragCoord.y);
 	} else {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, gl_FragCoord.y, scene.voxelRes * gl_FragCoord.z), color);
+		voxelCoord = ivec3(gl_FragCoord.x, gl_FragCoord.y, depthCoord);
+	}
+
+	uint prevColor = imageAtomicMax(voxelData, voxelCoord, color);
+
+	// Check if this voxel was empty before
+	if(convertIntToVec(prevColor).a == 0) {
+		// Write to number of voxels list
+		uint nextIndex = atomicAdd(drawCmd.instanceCount, 1);
+		// Write to position buffer
+		sparseList[nextIndex * 3] = voxelCoord.x;
+		sparseList[nextIndex * 3 + 1] = voxelCoord.y;
+		sparseList[nextIndex * 3 + 2] = voxelCoord.z;
+
+		// Create a sparse list for the next level as well
+		//nextIndex = atomicAdd(levelCounter, 1);
+		//sparseListNextLevel[nextIndex] = voxelCoord >> 1;
+		//imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
 	}
 }

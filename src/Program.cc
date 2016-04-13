@@ -107,7 +107,10 @@ bool Program::Init() {
 		return false;
 	}
 
+#ifdef DEBUG
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif // DEBUG
+
 	glcontext = SDL_GL_CreateContext(screen);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
@@ -117,7 +120,7 @@ bool Program::Init() {
 		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glewErr) << std::endl;
 		return false;
 	}
-#endif
+#endif // _WINDOWS
 
 #ifdef DEBUG
 	// Enable the debug callback
@@ -125,7 +128,7 @@ bool Program::Init() {
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(openglCallbackFunction, nullptr);
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
-#endif
+#endif // DEBUG
 
 	// Activate depth test and blend for masking textures
 	glEnable(GL_DEPTH_TEST);
@@ -140,11 +143,8 @@ bool Program::Init() {
 	printError("after wrapper inits");
 
 	glGenBuffers(1, &programBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 12, programBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, programBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, PROGRAM, programBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ProgramStruct), &param, GL_STREAM_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 
 	// Load shaders for drawing
 	shaders.simple = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
@@ -159,7 +159,7 @@ bool Program::Init() {
 	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
 
 	// Draw voxels from 3D texture
-	shaders.voxel = loadShadersG("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag", "src/shaders/voxelSimple.geom");
+	shaders.voxel = loadShaders("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag");// , "src/shaders/voxelSimple.geom");
 
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -177,13 +177,13 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
-	sponza->Voxelize();
+	//sponza->Voxelize();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -196,6 +196,7 @@ bool Program::Init() {
 
 	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -230,14 +231,14 @@ void Program::Clean() {
 
 void Program::UploadParams() {
 	// Update program parameters
-	glBindBuffer(GL_UNIFORM_BUFFER, programBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, PROGRAM, programBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(ProgramStruct), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
 	Program* obj = static_cast<Program*>(clientData);
 	obj->sceneSelect = *static_cast<const GLuint*>(value);
+	obj->GetCurrentScene()->UploadParams();
 	TwRemoveVar(obj->antBar, "SceneOptions");
 	TwRemoveVar(obj->antBar, "SceneToGPU");
 	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");

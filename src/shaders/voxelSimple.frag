@@ -7,9 +7,10 @@
 
 #version 430
 
-in vec4 outColor;
 in vec3 outNormal;
+in vec4 outColor;
 in vec4 outPosition;
+
 out vec4 finalColor;
 
 struct Camera {
@@ -18,7 +19,7 @@ struct Camera {
 	vec3 position;
 };
 
-layout (std140, binding = 10) uniform CameraBuffer {
+layout (std140, binding = 2) uniform CameraBuffer {
 	Camera cam;
 };
 

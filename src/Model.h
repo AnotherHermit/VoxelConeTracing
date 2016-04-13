@@ -52,6 +52,9 @@ public:
 	// TODO: remove the ordering dependecy
 	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
 
+	// Set position buffer data, only for voxel model
+	void SetPositionData(GLuint positionBufferID);
+
 	bool hasDiffuseTex();
 	bool hasMaskTex();
 

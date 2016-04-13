@@ -41,9 +41,8 @@ Camera::Camera(glm::vec3 startpos, GLint * screenWidth, GLint * screenHeight, GL
 
 bool Camera::Init() {
 	glGenBuffers(1, &cameraBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 10, cameraBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA, cameraBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraParam), NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Set starting WTVmatrix
 	UploadParams();
@@ -81,9 +80,8 @@ void Camera::Update() {
 }
 
 void Camera::UploadParams() {
-	glBindBufferBase(GL_UNIFORM_BUFFER, 10, cameraBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA, cameraBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(CameraParam), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void Camera::UpdateCamera() {

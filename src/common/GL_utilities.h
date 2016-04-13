@@ -112,5 +112,16 @@ struct DrawElementsIndirectCommand {
 	GLuint baseInstance;
 };
 
+enum UNIFORM_BINDING {
+	SCENE,
+	PROGRAM,
+	CAMERA
+};
+
+enum SHADER_STORAGE_BINDING {
+	DRAW_IND,
+	SPARSE_LIST
+};
+
 
 #endif

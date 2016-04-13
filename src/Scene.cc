@@ -21,6 +21,7 @@ TwType* Scene::resTwType = nullptr;
 TwType* Scene::viewTwType = nullptr;
 TwType* Scene::sceneTwStruct = nullptr;
 TwType* Scene::sceneOptionsTwStruct = nullptr;
+TwType* Scene::drawIndTwStruct = nullptr;
 
 Scene::Scene() {
 	options.skipNoTexture = false;
@@ -32,7 +33,14 @@ Scene::Scene() {
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
+	param.numMipLevels = (GLuint)log2(param.voxelRes) + 1;
 	param.mipLevel = 0;
+
+	drawIndCmd.baseInstance = 0;
+	drawIndCmd.instanceCount = 0;
+	drawIndCmd.firstVertex = 0;
+	drawIndCmd.baseVertex = 0;
+	drawIndCmd.vertexCount = 0;
 
 	maxVertex = nullptr;
 	minVertex = nullptr;
@@ -42,6 +50,7 @@ Scene::Scene() {
 
 	voxel2DTex = 0;
 	voxelTex = 0;
+	mutexTex = 0;
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {
@@ -72,12 +81,14 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	glUseProgram(shaders->voxelize);
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelTextures"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->voxelize, "voxelDataNextLevel"), 4);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders->voxelizeTexture);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "diffuseUnit"), 0);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelTextures"), 2);
 	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders->voxelizeTexture, "voxelDataNextLevel"), 4);
 
 	// Set constant uniforms for simple triangle drawing
 	glUseProgram(shaders->singleTriangle);
@@ -90,16 +101,15 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, SCENE, sceneBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(SceneParam), NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	ModelLoader modelLoader;
 	if(!modelLoader.LoadScene(path, models, shaders, &maxVertex, &minVertex)) {
 		std::cout << "Failed to load scene: " << path << std::endl;
 		return false;
 	}
-
+	
 	// Load a model for drawing the voxel
 	if(!modelLoader.LoadModel("resources/voxelLarge.obj", voxelModel, shaders->voxel)) {
 		std::cout << "Failed to load voxel model" << std::endl;
@@ -118,7 +128,21 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	param.MTWmatrix = glm::inverse(param.MTOmatrix[2]);
 
+	drawIndCmd.vertexCount = (GLuint)voxelModel->GetNumIndices();
+
+	glGenBuffers(1, &sparseListBuffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 3 * sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
+
+	voxelModel->SetPositionData(sparseListBuffer);
+
 	UploadParams();
+
+	// Draw Indirect Command buffer for drawing voxels
+	glGenBuffers(1, &drawIndBuffer);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawIndBuffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(DrawElementsIndirectCommand), &drawIndCmd, GL_STREAM_DRAW);
 
 	return true;
 }
@@ -146,9 +170,10 @@ bool Scene::InitializeAntBar() {
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
-		sceneTwMembers[4] = { "MipLevel", TW_TYPE_UINT32, offsetof(SceneParam, mipLevel), " min=0 max=9  " };
+		sceneTwMembers[4] = { "MipLevels", TW_TYPE_UINT32, offsetof(SceneParam, numMipLevels), " readonly=true " };
+		sceneTwMembers[5] = { "MipLevel", TW_TYPE_UINT32, offsetof(SceneParam, mipLevel), " min=0 max=9  " };
 		sceneTwStruct = new TwType;
-		*sceneTwStruct = TwDefineStruct("SceneGPUStruct", sceneTwMembers, 5, sizeof(SceneParam), NULL, NULL);
+		*sceneTwStruct = TwDefineStruct("SceneGPUStruct", sceneTwMembers, 6, sizeof(SceneParam), NULL, NULL);
 
 		sceneOptionTwMembers[0] = { "SkipNoTexture", TW_TYPE_BOOL8, offsetof(SceneOptions, skipNoTexture), "  " };
 		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
@@ -156,6 +181,14 @@ bool Scene::InitializeAntBar() {
 		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), " key=t " };
 		sceneOptionsTwStruct = new TwType;
 		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 4, sizeof(SceneOptions), NULL, NULL);
+
+		drawIndTwMembers[0] = { "VertexCount", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, vertexCount), " readonly=true " };
+		drawIndTwMembers[1] = { "InstanceCount", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, instanceCount), " readonly=true " };
+		drawIndTwMembers[2] = { "FirstVertex", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, firstVertex), " readonly=true " };
+		drawIndTwMembers[3] = { "BaseVertex", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, baseVertex), " readonly=true " };
+		drawIndTwMembers[4] = { "BaseInstance", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, baseInstance), " readonly=true " };
+		drawIndTwStruct = new TwType;
+		*drawIndTwStruct = TwDefineStruct("DrawIndStruct", drawIndTwMembers, 5, sizeof(DrawElementsIndirectCommand), NULL, NULL);
 
 		// Check if AntTweak Setup is ok
 		if(TwGetLastError() != NULL) return false;
@@ -166,7 +199,7 @@ bool Scene::InitializeAntBar() {
 	return true;
 }
 
-// Generate textures for render to texture
+// Generate textures for render to texture, only for debugging purposes
 void Scene::GenViewTexture(GLuint* viewID) {
 	if(*viewID != 0) {
 		glDeleteTextures(1, viewID);
@@ -176,6 +209,8 @@ void Scene::GenViewTexture(GLuint* viewID) {
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_R32UI, param.voxelRes, param.voxelRes, 3);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 }
 
 // Create the 3D texture that contains the voxel data
@@ -185,21 +220,31 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 	}
 	glGenTextures(1, texID);
 	glBindTexture(GL_TEXTURE_3D, *texID);
-	glTexStorage3D(GL_TEXTURE_3D, 1, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
+	glTexStorage3D(GL_TEXTURE_3D, param.numMipLevels, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 }
 
 void Scene::UploadParams() {
 	// Upload new params to GPU
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, SCENE, sceneBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void Scene::UpdateBuffers() {
+	glBindBufferBase(GL_UNIFORM_BUFFER, SCENE, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawIndBuffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
 }
 
 void Scene::Voxelize() {
 	GLint origViewportSize[4];
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
@@ -209,8 +254,18 @@ void Scene::Voxelize() {
 	glViewport(0, 0, param.voxelRes, param.voxelRes);
 	glDisable(GL_CULL_FACE);
 
+	GLuint reset = 0x00FF00FF;
+
 	glClearTexImage(voxel2DTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &reset);
+
+	glBindImageTexture(2, voxel2DTex, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(4, voxelTex, 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0 * sizeof(DrawElementsIndirectCommand) + sizeof(GLuint), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
+
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -231,21 +286,31 @@ void Scene::Voxelize() {
 			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
 		}
 
-		glBindImageTexture(2, voxel2DTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-		glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
 		(*model)->Draw();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
-	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
+	/*
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(DrawElementsIndirectCommand), &drawIndCmd);
+	/*
+	GLuint temp[300];
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLint) * 300, temp);
+
+	for(size_t i = 0; i < 100; i++) {
+		std::cout << "First Element: " << temp[i * 3] << ", " << temp[i * 3 + 1] << ", " << temp[i * 3 + 2] << std::endl;
+	}
+	*/
 }
 
 void Scene::Draw() {
-	glBindBufferBase(GL_UNIFORM_BUFFER, 11, sceneBuffer);
 	if(options.drawTextures) {
 		glUseProgram(shaders->singleTriangle);
 		glBindVertexArray(0);
@@ -301,12 +366,10 @@ void Scene::Draw() {
 			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_3D, voxelTex);
 
-			glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)voxelModel->GetNumIndices(), GL_UNSIGNED_INT, 0L, param.voxelRes*param.voxelRes*(param.voxelRes - 1));
+			glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0L);
 		}
 	}
 }
-
-
 
 void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
@@ -320,6 +383,7 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 	// Update texture if new size
 	if(input.voxelRes != obj->param.voxelRes) {
 		obj->param.voxelRes = input.voxelRes;
+		obj->param.numMipLevels = (GLuint)log2(input.voxelRes) + 1;
 
 		obj->GenViewTexture(&obj->voxel2DTex);
 		obj->GenVoxelTexture(&obj->voxelTex);
@@ -351,4 +415,13 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {
 	*static_cast<SceneOptions*>(value) = static_cast<Scene*>(clientData)->options;
+}
+
+void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {
+	Scene* obj = static_cast<Scene*>(clientData);
+	obj->drawIndCmd = *static_cast<const DrawElementsIndirectCommand*>(value);
+}
+
+void TW_CALL Scene::GetDrawIndCB(void* value, void* clientData) {
+	*static_cast<DrawElementsIndirectCommand*>(value) = static_cast<Scene*>(clientData)->drawIndCmd;
 }

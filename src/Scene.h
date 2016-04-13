@@ -23,6 +23,7 @@ struct SceneParam {
 	GLuint view;
 	GLuint voxelRes;
 	GLuint voxelLayer;
+	GLuint numMipLevels;
 	GLuint mipLevel;
 };
 
@@ -68,7 +69,13 @@ private:
 	// Uniform buffer with scene settings
 	SceneParam param;
 	GLuint sceneBuffer;
-	void UploadParams();
+
+	// Draw indirect buffer and struct
+	DrawElementsIndirectCommand drawIndCmd;
+	GLuint drawIndBuffer;
+
+	// Sparse List Buffer
+	GLuint sparseListBuffer;
 
 	// Empty framebuffer for voxelization
 	GLuint voxelFBO;
@@ -76,6 +83,7 @@ private:
 	// Voxel view textures
 	GLuint voxel2DTex;
 	GLuint voxelTex;
+	GLuint mutexTex;
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
@@ -84,16 +92,19 @@ private:
 	// Texture generation
 	void GenViewTexture(GLuint* viewID);
 	void GenVoxelTexture(GLuint* texID);
+	void GenMutexTexture(GLuint* texID);
 
 	// AntTweakBar Stuff
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
-	TwStructMember sceneTwMembers[5];
+	TwStructMember sceneTwMembers[6];
 	TwStructMember sceneOptionTwMembers[4];
+	TwStructMember drawIndTwMembers[5];
 	static TwType* resTwType;
 	static TwType* viewTwType;
 	static TwType* sceneTwStruct;
 	static TwType* sceneOptionsTwStruct;
+	static TwType* drawIndTwStruct;
 	static bool isInitialized;
 	bool InitializeAntBar();
 
@@ -103,14 +114,19 @@ public:
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
+	void UploadParams();
+	void UpdateBuffers();
 
 	// AntTweakBar
 	static TwType GetSceneTwType() { return *sceneTwStruct; }
 	static TwType GetSceneOptionTwType() { return *sceneOptionsTwStruct; }
+	static TwType GetDrawIndTwType() { return *drawIndTwStruct; }
 	static void TW_CALL SetSceneCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneCB(void* value, void* clientData);
 	static void TW_CALL SetSceneOptionsCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneOptionsCB(void* value, void* clientData);
+	static void TW_CALL SetDrawIndCB(const void* value, void* clientData);
+	static void TW_CALL GetDrawIndCB(void* value, void* clientData);
 };
 
 #endif // SCENE_H

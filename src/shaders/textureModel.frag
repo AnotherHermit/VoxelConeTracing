@@ -24,11 +24,11 @@ struct Program {
 	float deltaT;
 };
 
-layout (std140, binding = 10) uniform CameraBuffer {
+layout (std140, binding = 2) uniform CameraBuffer {
 	Camera cam;
 };
 
-layout (std140, binding = 12) uniform ProgramBuffer {
+layout (std140, binding = 1) uniform ProgramBuffer {
 	Program prog;
 };
 
