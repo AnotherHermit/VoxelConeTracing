@@ -15,6 +15,8 @@
 #include "Model.h"
 #include "GL_utilities.h"
 
+#define MAX_MIP_MAP_LEVELS 9
+
 // Values the should exist on the GPU
 struct SceneParam {
 	glm::mat4 MTOmatrix[3]; // Centers and scales scene to fit inside +-1 from three different rotations
@@ -71,7 +73,7 @@ private:
 	GLuint sceneBuffer;
 
 	// Draw indirect buffer and struct
-	DrawElementsIndirectCommand drawIndCmd;
+	DrawElementsIndirectCommand drawIndCmd[MAX_MIP_MAP_LEVELS];
 	GLuint drawIndBuffer;
 
 	// Sparse List Buffer

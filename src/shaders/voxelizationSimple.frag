@@ -15,6 +15,8 @@ uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
 uniform layout(R32UI) uimage3D voxelDataNextLevel;
 
+ivec3 voxelCoord;
+
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
@@ -39,14 +41,12 @@ struct DrawElementsIndirectCommand {
 };
 
 layout(std430, binding = 0) buffer DrawCmdBuffer {
-	DrawElementsIndirectCommand drawCmd;
+	DrawElementsIndirectCommand drawCmd[9];
 };
 
 layout(std430, binding = 1) writeonly buffer SparseBuffer {
 	uint sparseList[];
 };
-
-ivec3 voxelCoord;
 
 uint packARGB8(uvec4 input) {
 	uint result = 0;
@@ -91,13 +91,13 @@ void main()
 	// Check if this voxel was empty before
 	if(prevColor == 0) {
 		// Write to number of voxels list
-		uint nextIndex = atomicAdd(drawCmd.instanceCount, 1);
+		uint nextIndex = atomicAdd(drawCmd[0].instanceCount, 1);
 		// Write to position buffer
 		sparseList[nextIndex] = packRG11B10(uvec3(voxelCoord));
 
 		// Create a sparse list for the next level as well
-		//nextIndex = atomicAdd(levelCounter, 1);
-		//sparseListNextLevel[nextIndex] = voxelCoord >> 1;
-		//imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
+		nextIndex = atomicAdd(drawCmd[1].instanceCount, 1);
+		sparseList[nextIndex + uint(pow(scene.voxelRes >> 1, 3))] = packRG11B10(uvec3(voxelCoord >> 1));
+		imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
 	}
 }

@@ -25,14 +25,17 @@
     <Filter Include="Header Files\common\Externals">
       <UniqueIdentifier>{38726a6d-a086-4034-a000-cd8163bdce8f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders">
+    <Filter Include="Source Files\shaders">
       <UniqueIdentifier>{d88f6b57-37dd-4a8d-92f1-b62e66b5b161}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\Drawing">
+    <Filter Include="Source Files\shaders\Drawing">
       <UniqueIdentifier>{d50d27cf-b6e7-4ac7-9703-8739aeab810a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\Voxelization">
+    <Filter Include="Source Files\shaders\Voxelization">
       <UniqueIdentifier>{559ac126-7178-46c3-93a8-d6d94ed6009a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shaders\MipMap">
+      <UniqueIdentifier>{09588730-3da6-4d84-9c0e-e5f34d06c136}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -98,60 +101,66 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\simpleModel.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\simpleModel.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\textureModel.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\textureModel.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\maskModel.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\maskModel.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\voxelizationSimple.frag">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\voxelizationSimple.vert">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\voxelizationTexture.frag">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\voxelizationTexture.vert">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\voxelizationSimple.geom">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\voxelizationTexture.geom">
-      <Filter>Source Files\Shaders\Voxelization</Filter>
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
     <None Include="src\shaders\singleTriangle.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\singleTriangle.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\voxelSimple.frag">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\voxelSimple.geom">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\voxelSimple.vert">
-      <Filter>Source Files\Shaders\Drawing</Filter>
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\mipmapEnd.comp">
+      <Filter>Source Files\shaders\MipMap</Filter>
+    </None>
+    <None Include="src\shaders\mipmapStart.vert">
+      <Filter>Source Files\shaders\MipMap</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\shaderHelpers.txt">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\shaders</Filter>
     </Text>
   </ItemGroup>
 </Project>

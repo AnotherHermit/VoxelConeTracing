@@ -36,12 +36,6 @@ Scene::Scene() {
 	param.numMipLevels = (GLuint)log2(param.voxelRes) + 1;
 	param.mipLevel = 0;
 
-	drawIndCmd.baseInstance = 0;
-	drawIndCmd.instanceCount = 0;
-	drawIndCmd.firstVertex = 0;
-	drawIndCmd.baseVertex = 0;
-	drawIndCmd.vertexCount = 0;
-
 	maxVertex = nullptr;
 	minVertex = nullptr;
 
@@ -128,21 +122,38 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	param.MTWmatrix = glm::inverse(param.MTOmatrix[2]);
 
-	drawIndCmd.vertexCount = (GLuint)voxelModel->GetNumIndices();
+
 
 	glGenBuffers(1, &sparseListBuffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
 
 	voxelModel->SetPositionData(sparseListBuffer);
 
 	UploadParams();
 
+	GLuint baseStart = param.voxelRes * param.voxelRes * param.voxelRes;
+
+
+	// Initialize the indirect drawing buffer
+	for(size_t i = 0; i < MAX_MIP_MAP_LEVELS; i++) {
+		drawIndCmd[i].vertexCount = (GLuint)voxelModel->GetNumIndices();
+		drawIndCmd[i].instanceCount = 0;
+		drawIndCmd[i].firstVertex = 0;
+		drawIndCmd[i].baseVertex = 0;
+
+		if(i != 0) {
+			drawIndCmd[i].baseInstance = baseStart - (baseStart >> (3 * i));
+		} else {
+			drawIndCmd[i].baseInstance = 0;
+		}
+	}
+
 	// Draw Indirect Command buffer for drawing voxels
 	glGenBuffers(1, &drawIndBuffer);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawIndBuffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(DrawElementsIndirectCommand), &drawIndCmd, GL_STREAM_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(drawIndCmd), drawIndCmd, GL_STREAM_DRAW);
 
 	return true;
 }
@@ -245,7 +256,7 @@ void Scene::UpdateBuffers() {
 
 void Scene::ResizeBuffer() {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
 }
 
 void Scene::Voxelize() {
@@ -271,7 +282,9 @@ void Scene::Voxelize() {
 
 	// Reset the sparse texture count
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
-	glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0 * sizeof(DrawElementsIndirectCommand) + sizeof(GLuint), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
+	for(size_t i = 0; i < MAX_MIP_MAP_LEVELS; i++) {
+		glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, i * sizeof(DrawElementsIndirectCommand) + sizeof(GLuint), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
+	}
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -428,9 +441,9 @@ void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {
 
 void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	obj->drawIndCmd = *static_cast<const DrawElementsIndirectCommand*>(value);
+	obj->drawIndCmd[0] = *static_cast<const DrawElementsIndirectCommand*>(value);
 }
 
 void TW_CALL Scene::GetDrawIndCB(void* value, void* clientData) {
-	*static_cast<DrawElementsIndirectCommand*>(value) = static_cast<Scene*>(clientData)->drawIndCmd;
+	*static_cast<DrawElementsIndirectCommand*>(value) = static_cast<Scene*>(clientData)->drawIndCmd[0];
 }
