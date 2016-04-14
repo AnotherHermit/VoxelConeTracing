@@ -12,43 +12,53 @@ in vec4 exPosition;
 
 out vec4 outColor;
 
+uniform vec3 diffColor;
+
 struct Camera {
 	mat4 WTVmatrix;
 	mat4 VTPmatrix;
 	vec3 position;
 };
 
-struct Program {
-	float currentT;
-	float deltaT;
-};
-
-layout (std140, binding = 2) uniform CameraBuffer {
+layout (std140, binding = 0) uniform CameraBuffer {
 	Camera cam;
 };
 
-layout (std140, binding = 1) uniform ProgramBuffer {
-	Program prog;
+struct ShadeParams {
+	vec3 n;
+	vec3 s;
+	vec3 r;
+	vec3 v;
 };
 
-uniform vec3 diffColor;
+ShadeParams calcShadeParams(vec3 normal, vec3 lightDir, vec4 position, mat4 WTV) {
+	ShadeParams result;
+	result.n = normalize(normal);
+	result.s = normalize(mat3(WTV) * lightDir);
+	result.r = normalize(2 * result.n * dot(result.s, result.n) - result.s);
+	result.v = normalize(-(position.xyz / position.w));
+	return result;
+}
+
+float calcDiffShade(vec3 s, vec3 n) {
+	return max(0.2, dot(s, n));
+}
+
+float calcSpecShade(vec3 r, vec3 v, float specCoeff) {
+	return max(0.0, pow(dot(r, v), specCoeff));
+}
 
 void main()
 {	
-	vec3 n = normalize(exNormal);
-	vec3 s = normalize(mat3(cam.WTVmatrix) * vec3(0.58, 0.58, 0.58));
-	vec3 r = normalize(2 * n * dot(s,n) - s);
-	vec3 v = normalize(-(exPosition.xyz / exPosition.w));
+	// Calculate all necessary parameters
+	ShadeParams sp = calcShadeParams(exNormal, vec3(0.58,0.58,0.58), exPosition, cam.WTVmatrix);
 
-	// Calculate diffuse light
-	float diff = max(0.2, dot(s, n));
-	float spec = max(0.0, pow(dot(r, v), 5));
+	// Calculate diffuse and specular light
+	float diff = calcDiffShade(sp.s, sp.n);
+	float spec = calcSpecShade(sp.r, sp.v, 5.0f);
 
 	// Set constant color for textureless models
-	float shade = diff + spec;
-
-	// Set constant color for textureless models
-	vec3 color = diffColor * shade;
+	vec3 color = diffColor * (diff + spec);
 	
 	// Output complete color
 	outColor =  vec4(color, 1.0f);

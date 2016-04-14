@@ -113,9 +113,9 @@ struct DrawElementsIndirectCommand {
 };
 
 enum UNIFORM_BINDING {
+	CAMERA,
 	SCENE,
 	PROGRAM,
-	CAMERA
 };
 
 enum SHADER_STORAGE_BINDING {

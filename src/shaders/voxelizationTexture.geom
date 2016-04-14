@@ -23,9 +23,11 @@ struct SceneParams {
 	uint view;
 	uint voxelRes;
 	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
 };
 
-layout (std140, binding = 0) uniform SceneBuffer {
+layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 

@@ -21,17 +21,8 @@ struct Camera {
 	vec3 position;
 };
 
-struct Program {
-	float currentT;
-	float deltaT;
-};
-
-layout (std140, binding = 2) uniform CameraBuffer {
+layout (std140, binding = 0) uniform CameraBuffer {
 	Camera cam;
-};
-
-layout (std140, binding = 1) uniform ProgramBuffer {
-	Program prog;
 };
 
 void main(void)

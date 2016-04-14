@@ -132,7 +132,7 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	glGenBuffers(1, &sparseListBuffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 3 * sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
 
 	voxelModel->SetPositionData(sparseListBuffer);
 
@@ -243,10 +243,16 @@ void Scene::UpdateBuffers() {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
 }
 
+void Scene::ResizeBuffer() {
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLint) * param.voxelRes * param.voxelRes * param.voxelRes, NULL, GL_STREAM_DRAW);
+}
+
 void Scene::Voxelize() {
 	GLint origViewportSize[4];
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
 
+	// Enable rendering to framebuffer with voxelRes resolution
 	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, param.voxelRes);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, param.voxelRes);
@@ -254,18 +260,18 @@ void Scene::Voxelize() {
 	glViewport(0, 0, param.voxelRes, param.voxelRes);
 	glDisable(GL_CULL_FACE);
 
-	GLuint reset = 0x00FF00FF;
-
+	// Clear the last voxelization data
 	glClearTexImage(voxel2DTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &reset);
+	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 
+	// Bind the textures used to hold the voxelization data
 	glBindImageTexture(2, voxel2DTex, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
 	glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-	glBindImageTexture(4, voxelTex, 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(4, voxelTex, 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI); // First mip level, just used for writing the occupancy
 
+	// Reset the sparse texture count
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
 	glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0 * sizeof(DrawElementsIndirectCommand) + sizeof(GLuint), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
-
 
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -293,21 +299,22 @@ void Scene::Voxelize() {
 	}
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
 
+	// Restore the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-	/*
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
-	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(DrawElementsIndirectCommand), &drawIndCmd);
-	/*
-	GLuint temp[300];
+	
+	
+	// Optional read of the Indirect command buffer, to see the number of voxels actually used
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	//glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(DrawElementsIndirectCommand), &drawIndCmd);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
-	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLint) * 300, temp);
+	// Optional read of the voxel positions
+	//GLuint temp[300];
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
+	//glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLint) * 300, temp);
+	//for(size_t i = 0; i < 100; i++)
+	//	std::cout << "First Element: " << temp[i * 3] << ", " << temp[i * 3 + 1] << ", " << temp[i * 3 + 2] << std::endl;
 
-	for(size_t i = 0; i < 100; i++) {
-		std::cout << "First Element: " << temp[i * 3] << ", " << temp[i * 3 + 1] << ", " << temp[i * 3 + 2] << std::endl;
-	}
-	*/
 }
 
 void Scene::Draw() {
@@ -387,6 +394,8 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 
 		obj->GenViewTexture(&obj->voxel2DTex);
 		obj->GenVoxelTexture(&obj->voxelTex);
+
+		obj->ResizeBuffer();
 
 		obj->UploadParams();
 

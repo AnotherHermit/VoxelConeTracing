@@ -293,6 +293,9 @@
     <None Include="src\shaders\voxelSimple.geom" />
     <None Include="src\shaders\voxelSimple.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\shaders\shaderHelpers.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

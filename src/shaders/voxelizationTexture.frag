@@ -8,13 +8,16 @@
 #version 430
 
 in vec2 intTexCoords;
+
 flat in uint domInd;
 
-uniform vec3 diffColor;
 uniform sampler2D diffuseUnit;
 
 uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
+uniform layout(R32UI) uimage3D voxelDataNextLevel;
+
+ivec3 voxelCoord;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -23,35 +26,47 @@ struct SceneParams {
 	uint view;
 	uint voxelRes;
 	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
 };
 
-layout (std140, binding = 0) uniform SceneBuffer {
+layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 
-uvec4 convertIntToVec(uint input) {
-	uint r,g,b,a;
-	
-	b = input & 0xFF;
-	input = input >> 8;
-	g = input & 0xFF;
-	input = input >> 8;
-	r = input & 0xFF;
-	input = input >> 8;
-	a = input;
+struct DrawElementsIndirectCommand {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint baseVertex;
+	uint baseInstance;
+};
 
-	return uvec4(r,g,b,a);
+layout(std430, binding = 0) buffer DrawCmdBuffer {
+	DrawElementsIndirectCommand drawCmd;
+};
+
+layout(std430, binding = 1) writeonly buffer SparseBuffer {
+	uint sparseList[];
+};
+
+uint packARGB8(uvec4 input) {
+	uint result = 0;
+
+	result |= (input.a & 0xFF) << 24;
+	result |= (input.r & 0xFF) << 16;
+	result |= (input.g & 0xFF) << 8;
+	result |= (input.b & 0xFF);
+
+	return result;
 }
 
-uint convertVecToInt(uvec4 input) {
-	uint result = input.a;
+uint packRG11B10(uvec3 input) {
+	uint result = 0;
 
-	result = result << 8;
-	result |= input.r;
-	result = result << 8;
-	result |= input.g;
-	result = result << 8;
-	result |= input.b;
+	result |= (input.r & 0x7FF) << 21;
+	result |= (input.g & 0x7FF) << 10;
+	result |= (input.b & 0x3FF);
 
 	return result;
 }
@@ -59,15 +74,32 @@ uint convertVecToInt(uvec4 input) {
 void main()
 {	
 	// Set constant color for textured models
-	uint color = convertVecToInt(uvec4(uvec3(texture(diffuseUnit, intTexCoords).rgb * 255), 255));
+	uint color = packARGB8(uvec4(uvec3(texture(diffuseUnit, intTexCoords).rgb * 255), 255));
 
 	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), color);
 
+	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);
+
 	if(domInd == 0) {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.z * scene.voxelRes,gl_FragCoord.y, scene.voxelRes - gl_FragCoord.x), color);
+		voxelCoord = ivec3(depthCoord, gl_FragCoord.y, scene.voxelRes - gl_FragCoord.x);
 	} else if (domInd == 1) {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, scene.voxelRes * gl_FragCoord.z, scene.voxelRes - gl_FragCoord.y), color);
+		voxelCoord = ivec3(gl_FragCoord.x, depthCoord, scene.voxelRes - gl_FragCoord.y);
 	} else {
-		imageAtomicMax(voxelData, ivec3(gl_FragCoord.x, gl_FragCoord.y, scene.voxelRes * gl_FragCoord.z), color);
+		voxelCoord = ivec3(gl_FragCoord.x, gl_FragCoord.y, depthCoord);
+	}
+
+	uint prevColor = imageAtomicMax(voxelData, voxelCoord, color);
+
+	// Check if this voxel was empty before
+	if(prevColor == 0) {
+		// Write to number of voxels list
+		uint nextIndex = atomicAdd(drawCmd.instanceCount, 1);
+		// Write to position buffer
+		sparseList[nextIndex] = packRG11B10(uvec3(voxelCoord));
+
+		// Create a sparse list for the next level as well
+		//nextIndex = atomicAdd(levelCounter, 1);
+		//sparseListNextLevel[nextIndex] = voxelCoord >> 1;
+		//imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
 	}
 }

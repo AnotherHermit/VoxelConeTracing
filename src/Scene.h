@@ -116,6 +116,7 @@ public:
 	void Voxelize();
 	void UploadParams();
 	void UpdateBuffers();
+	void ResizeBuffer();
 
 	// AntTweakBar
 	static TwType GetSceneTwType() { return *sceneTwStruct; }

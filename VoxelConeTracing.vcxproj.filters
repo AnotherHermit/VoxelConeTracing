@@ -149,4 +149,9 @@
       <Filter>Source Files\Shaders\Drawing</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\shaders\shaderHelpers.txt">
+      <Filter>Source Files\Shaders</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

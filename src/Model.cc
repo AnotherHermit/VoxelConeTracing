@@ -130,7 +130,7 @@ void Model::SetPositionData(GLuint positionBufferID) {
 	glBindBuffer(GL_ARRAY_BUFFER, positionBufferID);
 	GLuint vVox = glGetAttribLocation(drawProgram, "inVoxelPos");
 	glEnableVertexAttribArray(vVox);
-	glVertexAttribIPointer(vVox, 3, GL_INT, 0, 0);
+	glVertexAttribIPointer(vVox, 1, GL_UNSIGNED_INT, 0, 0);
 	glVertexAttribDivisor(vVox, 1);
 
 	glBindVertexArray(0);

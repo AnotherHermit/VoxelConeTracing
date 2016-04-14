@@ -20,43 +20,29 @@ struct SceneParams {
 	uint view;
 	uint voxelRes;
 	uint voxelLayer;
+	uint numMipLevels;
 	uint mipLevel;
 };
 
-layout (std140, binding = 0) uniform SceneBuffer {
+layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 
-uvec4 convertIntToVec(uint input) {
-	uint r,g,b,a;
+uvec4 unpackARGB8(uint input) {
+	uvec4 outVec;
 	
-	b = input & 0xFF;
-	input = input >> 8;
-	g = input & 0xFF;
-	input = input >> 8;
-	r = input & 0xFF;
-	input = input >> 8;
-	a = input;
+	// Put a first to improve max operation but it should not be very noticable
+	outVec.a = (input & 0xFF000000) >> 24;
+	outVec.r = (input & 0x00FF0000) >> 16;
+	outVec.g = (input & 0x0000FF00) >> 8;
+	outVec.b = (input & 0x000000FF);
 
-	return uvec4(r,g,b,a);
-}
-
-uint convertVecToInt(uvec4 input) {
-	uint result = input.a;
-
-	result = result << 8;
-	result |= input.r;
-	result = result << 8;
-	result |= input.g;
-	result = result << 8;
-	result |= input.b;
-
-	return result;
+	return outVec;
 }
 
 void main()
 {	
-	vec4 color2D = vec4(convertIntToVec(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r)) / 255.0f;
-	vec4 color3D = vec4(convertIntToVec(texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1))).r)) / 255.0f;
+	vec4 color2D = vec4(unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r)) / 255.0f;
+	vec4 color3D = vec4(unpackARGB8(texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1))).r)) / 255.0f;
 	outColor = color2D * (scene.voxelDraw) + color3D * (1 - (scene.voxelDraw));
 }

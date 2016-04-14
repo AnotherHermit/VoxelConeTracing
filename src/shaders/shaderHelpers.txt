@@ -1,0 +1,133 @@
+//
+// Uniform Buffer Struct definitions
+//
+
+struct Camera {
+	mat4 WTVmatrix;
+	mat4 VTPmatrix;
+	vec3 position;
+};
+
+layout (std140, binding = 0) uniform CameraBuffer {
+	Camera cam;
+};
+
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
+};
+
+layout (std140, binding = 1) uniform SceneBuffer {
+	SceneParams scene;
+};
+
+struct Program {
+	float currentT;
+	float deltaT;
+};
+
+layout (std140, binding = 2) uniform ProgramBuffer {
+	Program prog;
+};
+
+
+//
+// Shader Storage Buffers Structs
+//
+
+struct DrawElementsIndirectCommand {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint baseVertex;
+	uint baseInstance;
+};
+
+layout(std430, binding = 0) buffer DrawCmdBuffer {
+	DrawElementsIndirectCommand drawCmd;
+};
+
+layout(std430, binding = 1) writeonly buffer SparseBuffer {
+	uint sparseList[];
+};
+
+//
+// Helper Functions for packing and unpacking uint to vec
+//
+
+uvec4 unpackARGB8(uint input) {
+	uvec4 outVec;
+	
+	// Put a first to improve max operation but it should not be very noticable
+	outVec.a = (input & 0xFF000000) >> 24;
+	outVec.r = (input & 0x00FF0000) >> 16;
+	outVec.g = (input & 0x0000FF00) >> 8;
+	outVec.b = (input & 0x000000FF);
+
+	return outVec;
+}
+
+uint packARGB8(uvec4 input) {
+	uint result = 0;
+
+	result |= (input.a & 0xFF) << 24;
+	result |= (input.r & 0xFF) << 16;
+	result |= (input.g & 0xFF) << 8;
+	result |= (input.b & 0xFF);
+
+	return result;
+}
+
+uvec3 unpackRG11B10(uint input) {
+	uvec3 outVec;
+
+	outVec.r = (input & 0xFFE00000) >> 21;
+	outVec.g = (input & 0x001FFC00) >> 10;
+	outVec.b = (input & 0x000003FF);
+
+	return outVec;
+}
+
+uint packRG11B10(uvec3 input) {
+	uint result = 0;
+
+	result |= (input.r & 0x7FF) << 21;
+	result |= (input.g & 0x7FF) << 10;
+	result |= (input.b & 0x3FF);
+
+	return result;
+}
+
+//
+//	Light Calculation Helpers
+//
+
+struct ShadeParams {
+	vec3 n;
+	vec3 s;
+	vec3 r;
+	vec3 v;
+};
+
+ShadeParams calcShadeParams(vec3 normal, vec3 lightDir, vec4 position, mat4 WTV) {
+	ShadeParams result;
+	result.n = normalize(normal);
+	result.s = normalize(mat3(WTV) * lightDir);
+	result.r = normalize(2 * result.n * dot(result.s, result.n) - result.s);
+	result.v = normalize(-(position.xyz / position.w));
+	return result;
+}
+
+float calcDiffShade(vec3 s, vec3 n) {
+	return max(0.2, dot(s, n));
+}
+
+float calcSpecShade(vec3 r, vec3 v, float specCoeff) {
+	return max(0.0, pow(dot(r, v), specCoeff));
+}

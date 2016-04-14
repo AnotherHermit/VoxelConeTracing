@@ -22,9 +22,11 @@ struct SceneParams {
 	uint view;
 	uint voxelRes;
 	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
 };
 
-layout (std140, binding = 0) uniform SceneBuffer {
+layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 
@@ -36,40 +38,33 @@ struct DrawElementsIndirectCommand {
 	uint baseInstance;
 };
 
-// Atomic counter of rendered particles;
 layout(std430, binding = 0) buffer DrawCmdBuffer {
 	DrawElementsIndirectCommand drawCmd;
 };
 
 layout(std430, binding = 1) writeonly buffer SparseBuffer {
-	int sparseList[];
+	uint sparseList[];
 };
 
 ivec3 voxelCoord;
 
-uvec4 convertIntToVec(uint input) {
-	uint r,g,b,a;
-	
-	b = input & 0xFF;
-	input = input >> 8;
-	g = input & 0xFF;
-	input = input >> 8;
-	r = input & 0xFF;
-	input = input >> 8;
-	a = input;
+uint packARGB8(uvec4 input) {
+	uint result = 0;
 
-	return uvec4(r,g,b,a);
+	result |= (input.a & 0xFF) << 24;
+	result |= (input.r & 0xFF) << 16;
+	result |= (input.g & 0xFF) << 8;
+	result |= (input.b & 0xFF);
+
+	return result;
 }
 
-uint convertVecToInt(uvec4 input) {
-	uint result = input.a;
+uint packRG11B10(uvec3 input) {
+	uint result = 0;
 
-	result = result << 8;
-	result |= input.r;
-	result = result << 8;
-	result |= input.g;
-	result = result << 8;
-	result |= input.b;
+	result |= (input.r & 0x7FF) << 21;
+	result |= (input.g & 0x7FF) << 10;
+	result |= (input.b & 0x3FF);
 
 	return result;
 }
@@ -77,7 +72,7 @@ uint convertVecToInt(uvec4 input) {
 void main()
 {	
 	// Set constant color for textureless models
-	uint color = convertVecToInt(uvec4(uvec3(diffColor*255), 255));
+	uint color = packARGB8(uvec4(uvec3(diffColor*255), 255));
 
 	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), color);
 
@@ -94,13 +89,11 @@ void main()
 	uint prevColor = imageAtomicMax(voxelData, voxelCoord, color);
 
 	// Check if this voxel was empty before
-	if(convertIntToVec(prevColor).a == 0) {
+	if(prevColor == 0) {
 		// Write to number of voxels list
 		uint nextIndex = atomicAdd(drawCmd.instanceCount, 1);
 		// Write to position buffer
-		sparseList[nextIndex * 3] = voxelCoord.x;
-		sparseList[nextIndex * 3 + 1] = voxelCoord.y;
-		sparseList[nextIndex * 3 + 2] = voxelCoord.z;
+		sparseList[nextIndex] = packRG11B10(uvec3(voxelCoord));
 
 		// Create a sparse list for the next level as well
 		//nextIndex = atomicAdd(levelCounter, 1);

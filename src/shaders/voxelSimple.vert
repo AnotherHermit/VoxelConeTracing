@@ -9,7 +9,7 @@
 
 in vec3 inPosition;
 in vec3 inNormal;
-in ivec3 inVoxelPos;
+in uint inVoxelPos;
 
 out vec4 outPosition;
 out vec3 outNormal;
@@ -23,7 +23,7 @@ struct Camera {
 	vec3 position;
 };
 
-layout (std140, binding = 2) uniform CameraBuffer {
+layout (std140, binding = 0) uniform CameraBuffer {
 	Camera cam;
 };
 
@@ -38,30 +38,38 @@ struct SceneParams {
 	uint mipLevel;
 };
 
-layout (std140, binding = 0) uniform SceneBuffer {
+layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 
-uvec4 convertIntToVec(uint input) {
-	uint r,g,b,a;
+uvec4 unpackARGB8(uint input) {
+	uvec4 outVec;
 	
-	b = input & 0xFF;
-	input = input >> 8;
-	g = input & 0xFF;
-	input = input >> 8;
-	r = input & 0xFF;
-	input = input >> 8;
-	a = input;
+	// Put a first to improve max operation but it should not be very noticable
+	outVec.a = (input & 0xFF000000) >> 24;
+	outVec.r = (input & 0x00FF0000) >> 16;
+	outVec.g = (input & 0x0000FF00) >> 8;
+	outVec.b = (input & 0x000000FF);
 
-	return uvec4(r,g,b,a);
+	return outVec;
+}
+
+uvec3 unpackRG11B10(uint input) {
+	uvec3 outVec;
+
+	outVec.r = (input & 0xFFE00000) >> 21;
+	outVec.g = (input & 0x001FFC00) >> 10;
+	outVec.b = (input & 0x000003FF);
+
+	return outVec;
 }
 
 void main(void)
 {
 	float size = float(scene.voxelRes);
-	vec3 voxelPos = vec3(inVoxelPos) / size;
+	vec3 voxelPos = vec3(unpackRG11B10(inVoxelPos)) / size;
 
-	uvec4 color = convertIntToVec(texture(voxelData, voxelPos).r);
+	uvec4 color = unpackARGB8(texture(voxelData, voxelPos).r);
 	outColor = vec4(color) / 255.0f;
 	
 	outNormal = mat3(cam.WTVmatrix) * inNormal;
