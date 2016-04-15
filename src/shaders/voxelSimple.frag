@@ -59,5 +59,5 @@ void main()
 	// Set constant color for textureless models
 	vec3 color = outColor.xyz * (diff + spec);
 
-	finalColor = vec4(color, 1.0f);
+	finalColor = vec4(color, outColor.w);
 }

@@ -79,13 +79,15 @@ private:
 	// Sparse List Buffer
 	GLuint sparseListBuffer;
 
+	// MipMap Stuff
+	GLuint mipmapVAO;
+
 	// Empty framebuffer for voxelization
 	GLuint voxelFBO;
 
 	// Voxel view textures
 	GLuint voxel2DTex;
 	GLuint voxelTex;
-	GLuint mutexTex;
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
@@ -94,7 +96,6 @@ private:
 	// Texture generation
 	void GenViewTexture(GLuint* viewID);
 	void GenVoxelTexture(GLuint* texID);
-	void GenMutexTexture(GLuint* texID);
 
 	// AntTweakBar Stuff
 	TwEnumVal viewTwEnum[3];
@@ -116,6 +117,8 @@ public:
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
+	void InitMipMap();
+	void MipMap();
 	void UploadParams();
 	void UpdateBuffers();
 	void ResizeBuffer();

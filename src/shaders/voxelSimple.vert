@@ -66,11 +66,11 @@ uvec3 unpackRG11B10(uint input) {
 
 void main(void)
 {
-	float size = float(scene.voxelRes);
+	float size = float(scene.voxelRes >> scene.mipLevel);
 	vec3 voxelPos = vec3(unpackRG11B10(inVoxelPos)) / size;
 
-	uvec4 color = unpackARGB8(texture(voxelData, voxelPos).r);
-	outColor = vec4(color) / 255.0f;
+	uvec4 color = unpackARGB8(textureLod(voxelData, voxelPos, float(scene.mipLevel)).r);
+	outColor = vec4(color) / float(color.a);
 	
 	outNormal = mat3(cam.WTVmatrix) * inNormal;
 	vec4 temp = cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition / size + 2.0f * voxelPos - vec3(1.0f), 1.0f);

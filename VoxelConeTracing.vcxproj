@@ -277,7 +277,7 @@
   <ItemGroup>
     <None Include="src\shaders\maskModel.frag" />
     <None Include="src\shaders\maskModel.vert" />
-    <None Include="src\shaders\mipmapEnd.comp" />
+    <None Include="src\shaders\mipmapStart.frag" />
     <None Include="src\shaders\mipmapStart.vert" />
     <None Include="src\shaders\simpleModel.frag" />
     <None Include="src\shaders\simpleModel.vert" />

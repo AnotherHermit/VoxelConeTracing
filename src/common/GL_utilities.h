@@ -59,7 +59,7 @@ void updateScreenSizeForFBOHandler(int w, int h); // Temporary workaround to inf
 
 // ===== Helpful data structs =====
 
-
+// All available shaders
 struct ShaderList {
 	GLuint simple;
 	GLuint texture;
@@ -68,6 +68,38 @@ struct ShaderList {
 	GLuint voxelizeTexture;
 	GLuint singleTriangle;
 	GLuint voxel;
+	GLuint mipmap;
+};
+
+// Draw Indirect command struct
+struct DrawElementsIndirectCommand {
+	GLuint vertexCount;
+	GLuint instanceCount;
+	GLuint firstVertex;
+	GLuint baseVertex;
+	GLuint baseInstance;
+};
+
+// Compute Indirect Command struct
+struct ComputeIndirectCommand {
+	GLuint workGroupSizeX;
+	GLuint workGroupSizeY;
+	GLuint workGroupSizeZ;
+};
+
+
+// ===== Helpful Enums for Buffer Bindings =====
+
+enum UNIFORM_BINDING {
+	CAMERA,
+	SCENE,
+	PROGRAM,
+};
+
+enum SHADER_STORAGE_BINDING {
+	DRAW_IND,
+	COMPUTE_IND,
+	SPARSE_LIST
 };
 
 
@@ -103,25 +135,6 @@ private:
 	GLfloat lapTime, time;
 };
 
-// Draw Indirect command struct
-struct DrawElementsIndirectCommand {
-	GLuint vertexCount;
-	GLuint instanceCount;
-	GLuint firstVertex;
-	GLuint baseVertex;
-	GLuint baseInstance;
-};
-
-enum UNIFORM_BINDING {
-	CAMERA,
-	SCENE,
-	PROGRAM,
-};
-
-enum SHADER_STORAGE_BINDING {
-	DRAW_IND,
-	SPARSE_LIST
-};
 
 
 #endif

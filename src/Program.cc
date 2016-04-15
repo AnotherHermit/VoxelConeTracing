@@ -215,7 +215,7 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GetCurrentScene()->Voxelize();
+	//GetCurrentScene()->Voxelize();
 	GetCurrentScene()->Draw();
 
 	TwDraw();

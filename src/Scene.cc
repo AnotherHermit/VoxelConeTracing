@@ -232,7 +232,7 @@ void Scene::GenVoxelTexture(GLuint* texID) {
 	glGenTextures(1, texID);
 	glBindTexture(GL_TEXTURE_3D, *texID);
 	glTexStorage3D(GL_TEXTURE_3D, param.numMipLevels, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -318,8 +318,8 @@ void Scene::Voxelize() {
 	
 	
 	// Optional read of the Indirect command buffer, to see the number of voxels actually used
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
-	//glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(DrawElementsIndirectCommand), &drawIndCmd);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(drawIndCmd), &drawIndCmd);
 
 	// Optional read of the voxel positions
 	//GLuint temp[300];
@@ -328,6 +328,33 @@ void Scene::Voxelize() {
 	//for(size_t i = 0; i < 100; i++)
 	//	std::cout << "First Element: " << temp[i * 3] << ", " << temp[i * 3 + 1] << ", " << temp[i * 3 + 2] << std::endl;
 
+}
+
+void Scene::InitMipMap() {
+	glGenVertexArrays(1, &mipmapVAO);
+
+	// Allocate enough memory for instanced drawing buffers
+	// Set the GPU pointers for drawing 
+	glUseProgram(shaders->mipmap);
+	glBindVertexArray(mipmapVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, sparseListBuffer);
+	GLuint vPos = glGetAttribLocation(shaders->mipmap, "inVoxelPos");
+	glEnableVertexAttribArray(vPos);
+	glVertexAttribIPointer(vPos, 1, GL_UNSIGNED_INT, 0, 0);
+
+	glBindVertexArray(0);
+}
+
+void Scene::MipMap() {
+	for(size_t nextMip = 2; nextMip < param.numMipLevels; nextMip++) {
+		glUseProgram(shaders->mipmap);
+		glBindVertexArray(mipmapVAO);
+
+		glUniform1ui(glGetUniformLocation(shaders->mipmap, "inVoxelPos"), nextMip);
+		
+		glDrawArraysIndirect(GL_POINTS,)
+	}
 }
 
 void Scene::Draw() {
@@ -386,7 +413,7 @@ void Scene::Draw() {
 			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_3D, voxelTex);
 
-			glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0L);
+			glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(sizeof(DrawElementsIndirectCommand) * param.mipLevel));
 		}
 	}
 }
@@ -441,9 +468,10 @@ void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {
 
 void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	obj->drawIndCmd[0] = *static_cast<const DrawElementsIndirectCommand*>(value);
+	obj->drawIndCmd[obj->param.mipLevel] = *static_cast<const DrawElementsIndirectCommand*>(value);
 }
 
 void TW_CALL Scene::GetDrawIndCB(void* value, void* clientData) {
-	*static_cast<DrawElementsIndirectCommand*>(value) = static_cast<Scene*>(clientData)->drawIndCmd[0];
+	Scene* obj = static_cast<Scene*>(clientData);
+	*static_cast<DrawElementsIndirectCommand*>(value) = obj->drawIndCmd[obj->param.mipLevel];
 }

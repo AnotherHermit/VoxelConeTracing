@@ -151,10 +151,10 @@
     <None Include="src\shaders\voxelSimple.vert">
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
-    <None Include="src\shaders\mipmapEnd.comp">
+    <None Include="src\shaders\mipmapStart.vert">
       <Filter>Source Files\shaders\MipMap</Filter>
     </None>
-    <None Include="src\shaders\mipmapStart.vert">
+    <None Include="src\shaders\mipmapStart.frag">
       <Filter>Source Files\shaders\MipMap</Filter>
     </None>
   </ItemGroup>

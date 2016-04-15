@@ -44,7 +44,17 @@ layout(std430, binding = 0) buffer DrawCmdBuffer {
 	DrawElementsIndirectCommand drawCmd[9];
 };
 
-layout(std430, binding = 1) writeonly buffer SparseBuffer {
+struct ComputeIndirectCommand {
+	GLuint workGroupSizeX;
+	GLuint workGroupSizeY;
+	GLuint workGroupSizeZ;
+};
+
+layout(std430, binding = 0) buffer ComputeCmdBuffer {
+	ComputeIndirectCommand ComputeCmd[9];
+};
+
+layout(std430, binding = 2) writeonly buffer SparseBuffer {
 	uint sparseList[];
 };
 
@@ -95,9 +105,13 @@ void main()
 		// Write to position buffer
 		sparseList[nextIndex] = packRG11B10(uvec3(voxelCoord));
 
-		// Create a sparse list for the next level as well
-		nextIndex = atomicAdd(drawCmd[1].instanceCount, 1);
-		sparseList[nextIndex + uint(pow(scene.voxelRes >> 1, 3))] = packRG11B10(uvec3(voxelCoord >> 1));
-		imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
+		// Count the number of voxels contributing to the next level
+		uint firstWrite = imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, packARGB8(uvec4(uvec3(diffColor*31),31)));
+
+		if(firstWrite == 0) {
+			// Create a sparse list for the next level as well
+			nextIndex = atomicAdd(drawCmd[1].instanceCount, 1);
+			sparseList[nextIndex + drawCmd[1].baseInstance] = packRG11B10(uvec3(voxelCoord >> 1));
+		}
 	}
 }
