@@ -161,6 +161,37 @@ bool Program::Init() {
 	// Draw voxels from 3D texture
 	shaders.voxel = loadShaders("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag");// , "src/shaders/voxelSimple.geom");
 
+	// Set constant uniforms for the drawing programs
+	glUseProgram(shaders.texture);
+	glUniform1i(glGetUniformLocation(shaders.texture, "diffuseUnit"), 0);
+
+	glUseProgram(shaders.mask);
+	glUniform1i(glGetUniformLocation(shaders.mask, "diffuseUnit"), 0);
+	glUniform1i(glGetUniformLocation(shaders.mask, "maskUnit"), 1);
+
+	// Set constant uniforms for voxel programs
+	glUseProgram(shaders.voxelize);
+	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelTextures"), 2);
+	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelDataNextLevel"), 4);
+
+	// Set constant uniforms for voxel programs
+	glUseProgram(shaders.voxelizeTexture);
+	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "diffuseUnit"), 0);
+	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelTextures"), 2);
+	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelDataNextLevel"), 4);
+
+	// Set constant uniforms for simple triangle drawing
+	glUseProgram(shaders.singleTriangle);
+	glUniform1i(glGetUniformLocation(shaders.singleTriangle, "voxelTextures"), 2);
+	glUniform1i(glGetUniformLocation(shaders.singleTriangle, "voxelData"), 3);
+
+	// Set constant uniforms for drawing the voxel overlay
+	glUseProgram(shaders.voxel);
+	glUniform1i(glGetUniformLocation(shaders.voxel, "voxelData"), 3);
+
+
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(winWidth, winWidth);
@@ -239,7 +270,7 @@ void Program::UploadParams() {
 void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
 	Program* obj = static_cast<Program*>(clientData);
 	obj->sceneSelect = *static_cast<const GLuint*>(value);
-	obj->GetCurrentScene()->UploadParams();
+	obj->GetCurrentScene()->UpdateBuffers();
 	TwRemoveVar(obj->antBar, "SceneOptions");
 	TwRemoveVar(obj->antBar, "SceneToGPU");
 	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");

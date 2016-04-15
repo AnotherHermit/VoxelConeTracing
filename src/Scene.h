@@ -16,6 +16,9 @@
 #include "GL_utilities.h"
 
 #define MAX_MIP_MAP_LEVELS 9
+#define MAX_VOXEL_RES 512
+// 512 ^ 3
+#define MAX_SPARSE_BUFFER_SIZE 134217728
 
 // Values the should exist on the GPU
 struct SceneParam {
@@ -92,11 +95,7 @@ private:
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
 	GLfloat scale;
-
-	// Texture generation
-	void GenViewTexture(GLuint* viewID);
-	void GenVoxelTexture(GLuint* texID);
-
+	
 	// AntTweakBar Stuff
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
@@ -109,7 +108,26 @@ private:
 	static TwType* sceneOptionsTwStruct;
 	static TwType* drawIndTwStruct;
 	static bool isInitialized;
-	bool InitializeAntBar();
+	
+	// Init functions
+	bool InitAntBar();
+	void InitBuffers();
+	void InitMipMap();
+	bool InitVoxel();
+	
+	// Setup functions
+	void SetupDrawInd();
+	bool SetupScene(const char* path);
+	void SetupTextures();
+
+	// Debug funtions
+	void PrintDrawIndCmd();
+	void PrintBuffer(GLuint bufferID, GLuint elements);
+
+	// Draw functions
+	void DrawTextures();
+	void DrawScene();
+	void DrawVoxels();
 
 public:
 	Scene();
@@ -117,11 +135,9 @@ public:
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
-	void InitMipMap();
 	void MipMap();
-	void UploadParams();
+
 	void UpdateBuffers();
-	void ResizeBuffer();
 
 	// AntTweakBar
 	static TwType GetSceneTwType() { return *sceneTwStruct; }

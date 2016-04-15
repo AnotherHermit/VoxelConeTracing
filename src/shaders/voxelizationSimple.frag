@@ -45,9 +45,9 @@ layout(std430, binding = 0) buffer DrawCmdBuffer {
 };
 
 struct ComputeIndirectCommand {
-	GLuint workGroupSizeX;
-	GLuint workGroupSizeY;
-	GLuint workGroupSizeZ;
+	uint workGroupSizeX;
+	uint workGroupSizeY;
+	uint workGroupSizeZ;
 };
 
 layout(std430, binding = 0) buffer ComputeCmdBuffer {
