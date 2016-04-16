@@ -231,31 +231,28 @@ GLuint loadShadersGT(const char *vertFileName, const char *fragFileName, const c
 	return p;
 }
 
-GLint CompileComputeShader(GLuint* program, const char* path) {
-	*program = glCreateProgram();
+GLuint CompileComputeShader(const char* compFileName) {
+	GLuint program = glCreateProgram();
 	GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
-	GLint wasError = 0;
 
-	char* cs = readFile((char *)path);
+	char* cs = readFile((char *)compFileName);
 	if (cs == NULL) {
 		printf("Error reading shader!\n");
 	}
 
 	glShaderSource(computeShader, 1, &cs, NULL);
 	glCompileShader(computeShader);
-	wasError += printShaderInfoLog(computeShader, path);
-	//get errors 
+	
+	printShaderInfoLog(computeShader, compFileName);
 
-	glAttachShader(*program, computeShader);
+	glAttachShader(program, computeShader);
 	glDeleteShader(computeShader);
-	glLinkProgram(*program);
-	glDetachShader(*program, computeShader);
-	//get errors from the program linking.
-	wasError += printProgramInfoLog(*program, path, NULL, NULL, NULL, NULL);
+	glLinkProgram(program);
+	glDetachShader(program, computeShader);
 
-	printError("Compile compute shader error!");
+	printProgramInfoLog(program, compFileName, NULL, NULL, NULL, NULL);
 
-	return wasError;
+	return program;
 }
 
 // End of Shader loader

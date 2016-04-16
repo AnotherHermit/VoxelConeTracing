@@ -87,7 +87,7 @@ void APIENTRY openglCallbackFunction(
 			break;
 	}
 	
-	fprintf(stderr, "%s\n", message);
+	fprintf(stderr, "%s\n\n", message);
 	if(severity == GL_DEBUG_SEVERITY_HIGH) {
 		fprintf(stderr, "Aborting...\n");
 		abort();
@@ -159,7 +159,10 @@ bool Program::Init() {
 	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
 
 	// Draw voxels from 3D texture
-	shaders.voxel = loadShaders("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag");// , "src/shaders/voxelSimple.geom");
+	shaders.voxel = loadShaders("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag");
+
+	// Calculate mipmaps
+	shaders.mipmap = CompileComputeShader("src/shaders/mipmap.comp");
 
 	// Set constant uniforms for the drawing programs
 	glUseProgram(shaders.texture);
@@ -191,12 +194,16 @@ bool Program::Init() {
 	glUseProgram(shaders.voxel);
 	glUniform1i(glGetUniformLocation(shaders.voxel, "voxelData"), 3);
 
+	// Set constant uniforms for calculating mipmaps
+	glUseProgram(shaders.mipmap);
+	glUniform1i(glGetUniformLocation(shaders.mipmap, "voxelData"), 3);
+	glUniform1i(glGetUniformLocation(shaders.mipmap, "voxelDataNextLevel"), 4);
 
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(winWidth, winWidth);
 	antBar = TwNewBar("VCT");
-	TwDefine(" VCT refresh=0.1 size='300 420' valueswidth=140 ");
+	TwDefine(" VCT refresh=0.1 size='300 520' valueswidth=140 ");
 	TwDefine(" VCT help='This program simulates Global Illumination with Voxel Cone Tracing.' ");
 
 	// Set up the camera
@@ -228,6 +235,7 @@ bool Program::Init() {
 	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, GetCurrentScene(), " group=Scene opened=true ");
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;

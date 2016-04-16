@@ -35,7 +35,7 @@ GLuint loadShaders(const char *vertFileName, const char *fragFileName);
 GLuint loadShadersG(const char *vertFileName, const char *fragFileName, const char *geomFileName);
 GLuint loadShadersGT(const char *vertFileName, const char *fragFileName, const char *geomFileName,
 					 const char *tcFileName, const char *teFileName);
-GLint CompileComputeShader(GLuint* program, const char* path);
+GLuint CompileComputeShader(const char* compFileName);
 
 void initKeymapManager();
 char keyIsDown(unsigned char c);

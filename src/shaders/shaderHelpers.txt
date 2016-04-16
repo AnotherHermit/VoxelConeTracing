@@ -53,7 +53,17 @@ layout(std430, binding = 0) buffer DrawCmdBuffer {
 	DrawElementsIndirectCommand drawCmd;
 };
 
-layout(std430, binding = 1) writeonly buffer SparseBuffer {
+struct ComputeIndirectCommand {
+	uint workGroupSizeX;
+	uint workGroupSizeY;
+	uint workGroupSizeZ;
+};
+
+layout(std430, binding = 1) buffer ComputeCmdBuffer {
+	ComputeIndirectCommand compCmd[9];
+};
+
+layout(std430, binding = 2) buffer SparseBuffer {
 	uint sparseList[];
 };
 

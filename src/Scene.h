@@ -76,8 +76,12 @@ private:
 	GLuint sceneBuffer;
 
 	// Draw indirect buffer and struct
-	DrawElementsIndirectCommand drawIndCmd[MAX_MIP_MAP_LEVELS];
+	DrawElementsIndirectCommand drawIndCmd[10];
 	GLuint drawIndBuffer;
+
+	// Compute indirect buffer and struct
+	ComputeIndirectCommand compIndCmd[10];
+	GLuint compIndBuffer;
 
 	// Sparse List Buffer
 	GLuint sparseListBuffer;
@@ -101,12 +105,14 @@ private:
 	TwEnumVal resTwEnum[5];
 	TwStructMember sceneTwMembers[6];
 	TwStructMember sceneOptionTwMembers[4];
-	TwStructMember drawIndTwMembers[5];
+	TwStructMember drawIndTwMembers[2];
+	TwStructMember compIndTwMembers[1];
 	static TwType* resTwType;
 	static TwType* viewTwType;
 	static TwType* sceneTwStruct;
 	static TwType* sceneOptionsTwStruct;
 	static TwType* drawIndTwStruct;
+	static TwType* compIndTwStruct;
 	static bool isInitialized;
 	
 	// Init functions
@@ -117,11 +123,13 @@ private:
 	
 	// Setup functions
 	void SetupDrawInd();
+	void SetupCompInd();
 	bool SetupScene(const char* path);
 	void SetupTextures();
 
 	// Debug funtions
 	void PrintDrawIndCmd();
+	void PrintCompIndCmd();
 	void PrintBuffer(GLuint bufferID, GLuint elements);
 
 	// Draw functions
@@ -143,12 +151,15 @@ public:
 	static TwType GetSceneTwType() { return *sceneTwStruct; }
 	static TwType GetSceneOptionTwType() { return *sceneOptionsTwStruct; }
 	static TwType GetDrawIndTwType() { return *drawIndTwStruct; }
+	static TwType GetCompIndTwType() { return *compIndTwStruct; }
 	static void TW_CALL SetSceneCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneCB(void* value, void* clientData);
 	static void TW_CALL SetSceneOptionsCB(const void* value, void* clientData);
 	static void TW_CALL GetSceneOptionsCB(void* value, void* clientData);
 	static void TW_CALL SetDrawIndCB(const void* value, void* clientData);
 	static void TW_CALL GetDrawIndCB(void* value, void* clientData);
+	static void TW_CALL SetCompIndCB(const void* value, void* clientData);
+	static void TW_CALL GetCompIndCB(void* value, void* clientData);
 };
 
 #endif // SCENE_H

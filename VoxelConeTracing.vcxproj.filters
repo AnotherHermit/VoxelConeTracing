@@ -145,16 +145,10 @@
     <None Include="src\shaders\voxelSimple.frag">
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
-    <None Include="src\shaders\voxelSimple.geom">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
     <None Include="src\shaders\voxelSimple.vert">
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
-    <None Include="src\shaders\mipmapStart.vert">
-      <Filter>Source Files\shaders\MipMap</Filter>
-    </None>
-    <None Include="src\shaders\mipmapStart.frag">
+    <None Include="src\shaders\mipmap.comp">
       <Filter>Source Files\shaders\MipMap</Filter>
     </None>
   </ItemGroup>
