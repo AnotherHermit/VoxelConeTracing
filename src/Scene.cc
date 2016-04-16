@@ -30,7 +30,7 @@ Scene::Scene() {
 	options.drawVoxels = false;
 	options.drawTextures = false;
 
-	param.voxelRes = 512;
+	param.voxelRes = 256;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
@@ -195,7 +195,6 @@ void Scene::SetupDrawInd() {
 		drawIndCmd[i].firstVertex = 0;
 		drawIndCmd[i].baseVertex = 0;
 
-		// TODO: Change the base instance to fit all lower than initial level completely
 		if(i == MAX_MIP_MAP_LEVELS) {
 			drawIndCmd[i].baseInstance = 0;
 		} else {
@@ -329,11 +328,10 @@ void Scene::Voxelize() {
 	// Restore the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-
-	MipMap();
 }
 
 void Scene::MipMap() {
+	// TODO: Make mipmap handle light injection
 	for(GLuint level = 0; level < param.numMipLevels; level++) {
 		glUseProgram(shaders->mipmap);
 
@@ -459,6 +457,7 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 		obj->UpdateBuffers();
 
 		obj->Voxelize();
+		obj->MipMap();
 	} else {
 		obj->UpdateBuffers();
 	}
@@ -476,6 +475,7 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 		obj->options = input;
 
 		obj->Voxelize();
+		obj->MipMap();
 	} else {
 		obj->options = input;
 	}

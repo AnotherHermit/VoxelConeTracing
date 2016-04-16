@@ -145,7 +145,8 @@ bool Program::Init() {
 	glGenBuffers(1, &programBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, PROGRAM, programBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ProgramStruct), &param, GL_STREAM_DRAW);
-
+	
+	// TODO: See if it is possible to recude number of shaders by using subroutines
 	// Load shaders for drawing
 	shaders.simple = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
 	shaders.texture = loadShaders("src/shaders/textureModel.vert", "src/shaders/textureModel.frag");
@@ -164,6 +165,7 @@ bool Program::Init() {
 	// Calculate mipmaps
 	shaders.mipmap = CompileComputeShader("src/shaders/mipmap.comp");
 
+	// TODO: Make this a separate function
 	// Set constant uniforms for the drawing programs
 	glUseProgram(shaders.texture);
 	glUniform1i(glGetUniformLocation(shaders.texture, "diffuseUnit"), 0);
@@ -221,7 +223,10 @@ bool Program::Init() {
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
+	cornell->MipMap();
+
 	sponza->Voxelize();
+	sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -234,8 +239,13 @@ bool Program::Init() {
 
 	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
+
+#ifdef DEBUG
 	TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, GetCurrentScene(), " group=Scene opened=true ");
+#endif // DEBUG
+
+	// TODO: Add directional light as a control
 
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
@@ -255,6 +265,8 @@ void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GetCurrentScene()->Voxelize();
+	// TODO: Light injection on base level voxels
+	GetCurrentScene()->MipMap();
 	GetCurrentScene()->Draw();
 
 	TwDraw();
@@ -281,12 +293,15 @@ void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
 	obj->GetCurrentScene()->UpdateBuffers();
 	TwRemoveVar(obj->antBar, "SceneOptions");
 	TwRemoveVar(obj->antBar, "SceneToGPU");
-	TwRemoveVar(obj->antBar, "DrawCmd");
-	TwRemoveVar(obj->antBar, "CompCmd");
 	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(obj->antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+
+#ifdef DEBUG
+	TwRemoveVar(obj->antBar, "DrawCmd");
+	TwRemoveVar(obj->antBar, "CompCmd");
 	TwAddVarCB(obj->antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(obj->antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+#endif // DEBUG
 }
 
 void TW_CALL Program::GetNewSceneCB(void* value, void* clientData) {
