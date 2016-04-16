@@ -15,9 +15,6 @@ uniform sampler2D diffuseUnit;
 
 uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
-uniform layout(R32UI) uimage3D voxelDataNextLevel;
-
-ivec3 voxelCoord;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -43,10 +40,20 @@ struct DrawElementsIndirectCommand {
 };
 
 layout(std430, binding = 0) buffer DrawCmdBuffer {
-	DrawElementsIndirectCommand drawCmd;
+	DrawElementsIndirectCommand drawCmd[10];
 };
 
-layout(std430, binding = 1) writeonly buffer SparseBuffer {
+struct ComputeIndirectCommand {
+	uint workGroupSizeX;
+	uint workGroupSizeY;
+	uint workGroupSizeZ;
+};
+
+layout(std430, binding = 1) buffer ComputeCmdBuffer {
+	ComputeIndirectCommand compCmd[10];
+};
+
+layout(std430, binding = 2) writeonly buffer SparseBuffer {
 	uint sparseList[];
 };
 
@@ -73,6 +80,8 @@ uint packRG11B10(uvec3 input) {
 
 void main()
 {	
+	ivec3 voxelCoord;
+
 	// Set constant color for textured models
 	uint color = packARGB8(uvec4(uvec3(texture(diffuseUnit, intTexCoords).rgb * 255), 255));
 
@@ -93,13 +102,13 @@ void main()
 	// Check if this voxel was empty before
 	if(prevColor == 0) {
 		// Write to number of voxels list
-		uint nextIndex = atomicAdd(drawCmd.instanceCount, 1);
-		// Write to position buffer
-		sparseList[nextIndex] = packRG11B10(uvec3(voxelCoord));
+		uint nextIndex = atomicAdd(drawCmd[0].instanceCount, 1);
+		
+		// Calculate and store number of workgroups needed
+		uint compWorkGroups = ((nextIndex + 1) >> 6) + 1; // 6 = log2(workGroupSize = 64)
+		atomicMax(compCmd[0].workGroupSizeX, compWorkGroups);
 
-		// Create a sparse list for the next level as well
-		//nextIndex = atomicAdd(levelCounter, 1);
-		//sparseListNextLevel[nextIndex] = voxelCoord >> 1;
-		//imageAtomicAdd(voxelDataNextLevel, voxelCoord >> 1, 1);
+		// Write to position buffer
+		sparseList[nextIndex + drawCmd[0].baseInstance] = packRG11B10(uvec3(voxelCoord));
 	}
 }

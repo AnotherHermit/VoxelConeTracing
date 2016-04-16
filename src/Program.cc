@@ -215,13 +215,13 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	//Scene* sponza = new Scene();
-	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	//scenes.push_back(sponza);
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
-	//sponza->Voxelize();
+	sponza->Voxelize();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -281,8 +281,12 @@ void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
 	obj->GetCurrentScene()->UpdateBuffers();
 	TwRemoveVar(obj->antBar, "SceneOptions");
 	TwRemoveVar(obj->antBar, "SceneToGPU");
+	TwRemoveVar(obj->antBar, "DrawCmd");
+	TwRemoveVar(obj->antBar, "CompCmd");
 	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(obj->antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(obj->antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarCB(obj->antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 }
 
 void TW_CALL Program::GetNewSceneCB(void* value, void* clientData) {

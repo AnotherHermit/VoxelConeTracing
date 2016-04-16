@@ -285,13 +285,13 @@ void Scene::Voxelize() {
 
 	// Reset the sparse voxel count
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, drawIndBuffer);
-	for(size_t i = 0; i < MAX_MIP_MAP_LEVELS; i++) {
+	for(size_t i = 0; i <= MAX_MIP_MAP_LEVELS; i++) {
 		glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, i * sizeof(DrawElementsIndirectCommand) + sizeof(GLuint), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
 	}
 
 	// Reset the sparse voxel count for compute shader
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, compIndBuffer);
-	for(size_t i = 0; i < MAX_MIP_MAP_LEVELS; i++) {
+	for(size_t i = 0; i <= MAX_MIP_MAP_LEVELS; i++) {
 		glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, i * sizeof(ComputeIndirectCommand), sizeof(GLuint), GL_RED, GL_UNSIGNED_INT, NULL); // Clear data before since data is used when drawing
 	}
 
@@ -347,7 +347,6 @@ void Scene::MipMap() {
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 	}
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT );
-	//glFinish();
 }
 
 void Scene::DrawTextures() {
@@ -493,7 +492,11 @@ void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetDrawIndCB(void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	//obj->PrintDrawIndCmd();
+
+#ifdef DEBUG
+	obj->PrintDrawIndCmd();
+#endif // DEBUG
+
 	*static_cast<DrawElementsIndirectCommand*>(value) = obj->drawIndCmd[obj->param.mipLevel];
 }
 
@@ -504,6 +507,10 @@ void TW_CALL Scene::SetCompIndCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetCompIndCB(void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	//obj->PrintCompIndCmd();
+
+#ifdef DEBUG
+	obj->PrintCompIndCmd();
+#endif // DEBUG
+
 	*static_cast<ComputeIndirectCommand*>(value) = obj->compIndCmd[obj->param.mipLevel];
 }

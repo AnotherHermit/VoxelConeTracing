@@ -13,7 +13,6 @@ uniform vec3 diffColor;
 
 uniform layout(R32UI) uimage2DArray voxelTextures;
 uniform layout(R32UI) uimage3D voxelData;
-//uniform layout(R32UI) uimage3D voxelDataNextLevel;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
