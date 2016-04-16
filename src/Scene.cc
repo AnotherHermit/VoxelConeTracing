@@ -30,7 +30,7 @@ Scene::Scene() {
 	options.drawVoxels = false;
 	options.drawTextures = false;
 
-	param.voxelRes = 256;
+	param.voxelRes = 512;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
 	param.view = 0;
@@ -149,7 +149,7 @@ bool Scene::SetupScene(const char* path) {
 	scale = glm::max(diffVector.x, glm::max(diffVector.y, diffVector.z));
 
 	// Set the matrices for looking at the scene in three different ways
-	param.MTOmatrix[2] = glm::scale(glm::vec3(1.99f / scale)) * glm::translate(-centerVertex);
+	param.MTOmatrix[2] = glm::scale(glm::vec3(1.99999f / scale)) * glm::translate(-centerVertex);
 	param.MTOmatrix[0] = glm::rotate(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * param.MTOmatrix[2];
 	param.MTOmatrix[1] = glm::rotate(glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * param.MTOmatrix[2];
 
@@ -189,7 +189,7 @@ void Scene::InitMipMap() {
 
 void Scene::SetupDrawInd() {
 	// Initialize the indirect drawing buffer
-	for(int i = MAX_MIP_MAP_LEVELS, j = 0; i >= 0; i--, j++) {
+	for(int i = MAX_MIP_MAP_LEVELS, j = -1; i >= 0; i--, j++) {
 		drawIndCmd[i].vertexCount = (GLuint)voxelModel->GetNumIndices();
 		drawIndCmd[i].instanceCount = 0;
 		drawIndCmd[i].firstVertex = 0;
@@ -197,12 +197,10 @@ void Scene::SetupDrawInd() {
 
 		// TODO: Change the base instance to fit all lower than initial level completely
 		if(i == MAX_MIP_MAP_LEVELS) {
-			drawIndCmd[i].baseInstance = MAX_SPARSE_BUFFER_SIZE - 1;
-		} else if(i != 0) {
-			drawIndCmd[i].baseInstance = drawIndCmd[i+1].baseInstance - (1 << (3 * j));
-		} else {
 			drawIndCmd[i].baseInstance = 0;
-		}
+		} else {
+			drawIndCmd[i].baseInstance = drawIndCmd[i+1].baseInstance + (1 << (3 * j));
+		} 
 	}
 
 	// Draw Indirect Command buffer for drawing voxels
@@ -214,7 +212,7 @@ void Scene::SetupDrawInd() {
 
 void Scene::SetupCompInd() {
 	// Initialize the indirect compute buffer
-	for(size_t i = 0; i < MAX_MIP_MAP_LEVELS; i++) {
+	for(size_t i = 0; i <= MAX_MIP_MAP_LEVELS; i++) {
 		compIndCmd[i].workGroupSizeX = 0;
 		compIndCmd[i].workGroupSizeY = 1;
 		compIndCmd[i].workGroupSizeZ = 1;
@@ -247,7 +245,7 @@ void Scene::SetupTextures() {
 	}
 	glGenTextures(1, &voxelTex);
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
-	glTexStorage3D(GL_TEXTURE_3D, param.numMipLevels, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
+	glTexStorage3D(GL_TEXTURE_3D, param.numMipLevels + 1, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -281,7 +279,9 @@ void Scene::Voxelize() {
 
 	// Clear the last voxelization data
 	glClearTexImage(voxel2DTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
-	glClearTexImage(voxelTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	for(size_t i = 0; i <= param.numMipLevels; i++) {
+		glClearTexImage(voxelTex, (GLint)i, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	}
 
 	// Reset the sparse voxel count
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, drawIndBuffer);
@@ -334,7 +334,7 @@ void Scene::Voxelize() {
 }
 
 void Scene::MipMap() {
-	for(GLuint level = 0; level < param.numMipLevels-1; level++) {
+	for(GLuint level = 0; level < param.numMipLevels; level++) {
 		glUseProgram(shaders->mipmap);
 
 		glBindImageTexture(3, voxelTex, level, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
@@ -344,9 +344,10 @@ void Scene::MipMap() {
 
 		glDispatchComputeIndirect(NULL);
 
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 	}
-	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT );
+	//glFinish();
 }
 
 void Scene::DrawTextures() {
@@ -492,7 +493,7 @@ void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetDrawIndCB(void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	obj->PrintDrawIndCmd();
+	//obj->PrintDrawIndCmd();
 	*static_cast<DrawElementsIndirectCommand*>(value) = obj->drawIndCmd[obj->param.mipLevel];
 }
 
@@ -503,6 +504,6 @@ void TW_CALL Scene::SetCompIndCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetCompIndCB(void* value, void* clientData) {
 	Scene* obj = static_cast<Scene*>(clientData);
-	obj->PrintCompIndCmd();
+	//obj->PrintCompIndCmd();
 	*static_cast<ComputeIndirectCommand*>(value) = obj->compIndCmd[obj->param.mipLevel];
 }

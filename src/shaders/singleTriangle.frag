@@ -42,7 +42,10 @@ uvec4 unpackARGB8(uint input) {
 
 void main()
 {	
+	float size = float(scene.voxelRes >> scene.mipLevel);
+	float depth = float(scene.voxelLayer) / size;
+
 	vec4 color2D = vec4(unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r)) / 255.0f;
-	vec4 color3D = vec4(unpackARGB8(texture(voxelData, vec3(exTexCoords, float(scene.voxelLayer) / float(scene.voxelRes-1))).r)) / 255.0f;
+	vec4 color3D = vec4(unpackARGB8(textureLod(voxelData, vec3(exTexCoords, depth), scene.mipLevel).r)) / 255.0f;
 	outColor = color2D * (scene.voxelDraw) + color3D * (1 - (scene.voxelDraw));
 }

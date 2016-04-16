@@ -38,7 +38,7 @@ struct DrawElementsIndirectCommand {
 };
 
 layout(std430, binding = 0) buffer DrawCmdBuffer {
-	DrawElementsIndirectCommand drawCmd[9];
+	DrawElementsIndirectCommand drawCmd[10];
 };
 
 struct ComputeIndirectCommand {
@@ -48,7 +48,7 @@ struct ComputeIndirectCommand {
 };
 
 layout(std430, binding = 1) buffer ComputeCmdBuffer {
-	ComputeIndirectCommand compCmd[9];
+	ComputeIndirectCommand compCmd[10];
 };
 
 layout(std430, binding = 2) buffer SparseBuffer {
@@ -102,18 +102,18 @@ void main(void)
 {	
 	uint currentVoxel = gl_GlobalInvocationID.x;
 	uint voxelCount = drawCmd[currentLevel].instanceCount;
+
 	if(currentVoxel < voxelCount) {
 		uint currentOffset = drawCmd[currentLevel].baseInstance;
 		uint voxelPos = currentVoxel + currentOffset;
-		uint nextLevel = currentLevel + 1;
-		uint nextOffset = drawCmd[nextLevel].baseInstance;
-
 		uvec3 voxelCoord = unpackRG11B10(sparseList[voxelPos]);
 
 		uvec4 color = unpackARGB8(imageLoad(voxelData, ivec3(voxelCoord)).r);
 		vec4 fColor = vec4(color) / float(color.a);
 		color = uvec4(fColor * 31.0f);
 
+		uint nextLevel = currentLevel + 1;
+		uint nextOffset = drawCmd[nextLevel].baseInstance;
 		uvec3 nextVoxelCoord = voxelCoord >> 1;
 
 		uint prevColor = imageAtomicAdd(voxelDataNextLevel, ivec3(nextVoxelCoord), packARGB8(color));

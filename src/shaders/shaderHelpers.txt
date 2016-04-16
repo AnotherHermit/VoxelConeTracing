@@ -50,7 +50,7 @@ struct DrawElementsIndirectCommand {
 };
 
 layout(std430, binding = 0) buffer DrawCmdBuffer {
-	DrawElementsIndirectCommand drawCmd;
+	DrawElementsIndirectCommand drawCmd[10];
 };
 
 struct ComputeIndirectCommand {
@@ -60,7 +60,7 @@ struct ComputeIndirectCommand {
 };
 
 layout(std430, binding = 1) buffer ComputeCmdBuffer {
-	ComputeIndirectCommand compCmd[9];
+	ComputeIndirectCommand compCmd[10];
 };
 
 layout(std430, binding = 2) buffer SparseBuffer {
