@@ -9,14 +9,15 @@
 
 flat in uint domInd;
 
-uniform vec3 diffColor;
+layout(location = 0) uniform vec3 diffColor;
 
-uniform layout(R32UI) uimage2DArray voxelTextures;
-uniform layout(R32UI) uimage3D voxelData;
+layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
+layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;

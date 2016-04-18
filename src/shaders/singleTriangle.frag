@@ -10,12 +10,14 @@
 in vec2 exTexCoords;
 out vec4 outColor;
 
-uniform usampler2DArray voxelTextures;
-uniform usampler3D voxelData;
+layout(location = 3) uniform usampler2DArray voxelTextures;
+layout(location = 4) uniform usampler3D voxelData;
+layout(location = 6) uniform usampler2D shadowMap;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;
@@ -47,5 +49,7 @@ void main()
 
 	vec4 color2D = vec4(unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r)) / 255.0f;
 	vec4 color3D = vec4(unpackARGB8(textureLod(voxelData, vec3(exTexCoords, depth), scene.mipLevel).r)) / 255.0f;
-	outColor = color2D * (scene.voxelDraw) + color3D * (1 - (scene.voxelDraw));
+	vec4 shadowColor = vec4(unpackARGB8(texture(shadowMap, exTexCoords).r)) / 255.0f;
+
+	outColor = color3D * float(scene.voxelDraw == 0) + color2D * float(scene.voxelDraw == 1) + shadowColor * float(scene.voxelDraw == 2);
 }

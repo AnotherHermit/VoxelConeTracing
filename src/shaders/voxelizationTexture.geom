@@ -19,6 +19,7 @@ out vec2 intTexCoords;
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;

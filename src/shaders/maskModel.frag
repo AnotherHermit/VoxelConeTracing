@@ -13,8 +13,8 @@ in vec2 exTexCoords;
 
 out vec4 outColor;
 
-uniform sampler2D diffuseUnit;
-uniform sampler2D maskUnit;
+layout(location = 1) uniform sampler2D diffuseUnit;
+layout(location = 2) uniform sampler2D maskUnit;
 
 struct Camera {
 	mat4 WTVmatrix;

@@ -29,6 +29,8 @@ Scene::Scene() {
 	options.drawModels = true;
 	options.drawVoxels = false;
 	options.drawTextures = false;
+	options.shadowRes = 1024;
+	options.lightDir = glm::vec3(0.58f, 0.58f, 0.58f);
 
 	param.voxelRes = 256;
 	param.voxelLayer = 0;
@@ -57,10 +59,12 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 	if(!InitAntBar()) return false;
 	if(!SetupScene(path)) return false;
 	if(!InitVoxel()) return false;
-	
+
 	SetupDrawInd();
 	SetupCompInd();
 	SetupTextures();
+	SetupShadowTexture();
+	SetupShadowMatrix();
 
 	UpdateBuffers();
 
@@ -70,7 +74,6 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 void Scene::InitBuffers() {
 	// Init the framebuffer for drawing
 	glGenFramebuffers(1, &voxelFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
 
 	// Set non-constant uniforms for all programs
 	glGenBuffers(1, &sceneBuffer);
@@ -102,7 +105,7 @@ bool Scene::InitAntBar() {
 		resTwType = new TwType;
 		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_BOOL32, offsetof(SceneParam, voxelDraw), "  " };
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=2 " };
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
@@ -115,8 +118,9 @@ bool Scene::InitAntBar() {
 		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
 		sceneOptionTwMembers[2] = { "DrawModels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawModels), "  " };
 		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), " key=t " };
+		sceneOptionTwMembers[4] = { "LightDirection", TW_TYPE_DIR3F, offsetof(SceneOptions, lightDir), "  " };
 		sceneOptionsTwStruct = new TwType;
-		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 4, sizeof(SceneOptions), NULL, NULL);
+		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 5, sizeof(SceneOptions), NULL, NULL);
 
 		drawIndTwMembers[0] = { "InstanceCount", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, instanceCount), " readonly=true " };
 		drawIndTwMembers[1] = { "BaseInstance", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, baseInstance), " readonly=true " };
@@ -172,12 +176,12 @@ bool Scene::InitVoxel() {
 }
 
 void Scene::InitMipMap() {
-	glGenVertexArrays(1, &mipmapVAO);
+	glGenVertexArrays(1, &shadowVAO);
 
 	// Allocate enough memory for instanced drawing buffers
 	// Set the GPU pointers for drawing 
-	glUseProgram(shaders->mipmap);
-	glBindVertexArray(mipmapVAO);
+	glUseProgram(shaders->shadowMap);
+	glBindVertexArray(shadowVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, sparseListBuffer);
 	GLuint vPos = glGetAttribLocation(shaders->mipmap, "inVoxelPos");
@@ -189,17 +193,19 @@ void Scene::InitMipMap() {
 
 void Scene::SetupDrawInd() {
 	// Initialize the indirect drawing buffer
-	for(int i = MAX_MIP_MAP_LEVELS, j = -1; i >= 0; i--, j++) {
+	for(int i = MAX_MIP_MAP_LEVELS, j = 0; i >= 0; i--, j++) {
 		drawIndCmd[i].vertexCount = (GLuint)voxelModel->GetNumIndices();
 		drawIndCmd[i].instanceCount = 0;
 		drawIndCmd[i].firstVertex = 0;
 		drawIndCmd[i].baseVertex = 0;
 
-		if(i == MAX_MIP_MAP_LEVELS) {
+		if(i == 0) {
 			drawIndCmd[i].baseInstance = 0;
+		} else if(i == MAX_MIP_MAP_LEVELS) {
+			drawIndCmd[i].baseInstance = MAX_SPARSE_BUFFER_SIZE - 1;
 		} else {
-			drawIndCmd[i].baseInstance = drawIndCmd[i+1].baseInstance + (1 << (3 * j));
-		} 
+			drawIndCmd[i].baseInstance = drawIndCmd[i + 1].baseInstance - (1 << (3 * j));
+		}
 	}
 
 	// Draw Indirect Command buffer for drawing voxels
@@ -225,7 +231,7 @@ void Scene::SetupCompInd() {
 }
 
 void Scene::SetupTextures() {
-	
+
 	// Generate textures for render to texture, only for debugging purposes
 	if(voxel2DTex != 0) {
 		glDeleteTextures(1, &voxel2DTex);
@@ -250,6 +256,24 @@ void Scene::SetupTextures() {
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+}
+
+void Scene::SetupShadowTexture() {
+	glGenTextures(1, &shadowTex);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R16F, options.shadowRes, options.shadowRes);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+void Scene::SetupShadowMatrix() {
+	glm::vec3 z = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 axis = glm::cross(z, glm::normalize(options.lightDir));
+	GLfloat angle = glm::radians(acos(glm::dot(z, options.lightDir)));
+
+	param.MTShadowMatrix = /*glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) */ param.MTOmatrix[2];
 }
 
 void Scene::UpdateBuffers() {
@@ -281,6 +305,7 @@ void Scene::Voxelize() {
 	for(size_t i = 0; i <= param.numMipLevels; i++) {
 		glClearTexImage(voxelTex, (GLint)i, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	}
+	glClearTexImage(shadowTex, 0, GL_RED, GL_FLOAT, NULL);
 
 	// Reset the sparse voxel count
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, drawIndBuffer);
@@ -297,6 +322,7 @@ void Scene::Voxelize() {
 	// Bind the textures used to hold the voxelization data
 	glBindImageTexture(2, voxel2DTex, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
 	glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16F);
 
 	// All faces must be rendered
 	glDisable(GL_CULL_FACE);
@@ -307,17 +333,18 @@ void Scene::Voxelize() {
 			continue;
 		}
 
-		glUseProgram((*model)->GetVoxelProgram());
-		glBindVertexArray((*model)->GetVoxelVAO());
-
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
+			glUseProgram(shaders->voxelizeTexture);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
 		} else {
+			glUseProgram(shaders->voxelize);
 			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(glGetUniformLocation((*model)->GetVoxelProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+			glUniform3f(0, diffColor.r, diffColor.g, diffColor.b);
 		}
+
+		glBindVertexArray((*model)->GetVAO());
 
 		(*model)->Draw();
 
@@ -328,6 +355,49 @@ void Scene::Voxelize() {
 	// Restore the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
+
+	PrintBuffer(sparseListBuffer, 10);
+}
+
+void Scene::InjectLight() {
+	// Setup framebuffer for rendering offscreen
+	GLint origViewportSize[4];
+	glGetIntegerv(GL_VIEWPORT, origViewportSize);
+
+	// Enable rendering to framebuffer with shadow map resolution
+	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, options.shadowRes);
+	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, options.shadowRes);
+
+	glViewport(0, 0, options.shadowRes, options.shadowRes);
+
+	// Clear the last shadow map
+	glClearTexImage(shadowTex, 0, GL_RED, GL_FLOAT, NULL);
+
+	// Light should also hit backsides (especially for cornell)
+	glDisable(GL_CULL_FACE);
+
+	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16F);
+
+	// Create the shadow map texture
+	for(auto model = models->begin(); model != models->end(); model++) {
+
+		// Don't draw models without texture
+		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
+			continue;
+		}
+
+		glUseProgram(shaders->shadowMap);
+		glBindVertexArray((*model)->GetVAO());
+
+		(*model)->Draw();
+	}
+
+	// Restore the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
+
+	//glClearTexImage(shadowTex, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void Scene::MipMap() {
@@ -336,15 +406,17 @@ void Scene::MipMap() {
 		glUseProgram(shaders->mipmap);
 
 		glBindImageTexture(3, voxelTex, level, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-		glBindImageTexture(4, voxelTex, level + 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI); 
+		glBindImageTexture(4, voxelTex, level + 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
-		glUniform1ui(glGetUniformLocation(shaders->mipmap, "currentLevel"), level);
+		glUniform1ui(CURRENT_LEVEL, level);
 
 		glDispatchComputeIndirect(NULL);
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 	}
-	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT );
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+
+
 }
 
 void Scene::DrawTextures() {
@@ -355,6 +427,8 @@ void Scene::DrawTextures() {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, voxel2DTex);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -367,27 +441,29 @@ void Scene::DrawScene() {
 			continue;
 		}
 
-		glUseProgram((*model)->GetDrawProgram());
-		glBindVertexArray((*model)->GetDrawVAO());
-
 		glEnable(GL_CULL_FACE);
 
 		// Bind the color texture
 		if((*model)->hasDiffuseTex()) {
+			glUseProgram(shaders->texture);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
 		} else {
+			glUseProgram(shaders->simple);
 			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(glGetUniformLocation((*model)->GetDrawProgram(), "diffColor"), diffColor.r, diffColor.g, diffColor.b);
+			glUniform3f(0, diffColor.r, diffColor.g, diffColor.b);
 		}
 
 		// Bind the masking texture
 		if((*model)->hasMaskTex()) {
 			glDisable(GL_CULL_FACE);
+			glUseProgram(shaders->mask);
 
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, (*model)->GetMaskID());
 		}
+
+		glBindVertexArray((*model)->GetVAO());
 
 		(*model)->Draw();
 	}
@@ -396,8 +472,8 @@ void Scene::DrawScene() {
 void Scene::DrawVoxels() {
 	glEnable(GL_CULL_FACE);
 
-	glUseProgram(voxelModel->GetDrawProgram());
-	glBindVertexArray(voxelModel->GetDrawVAO());
+	glUseProgram(shaders->voxel);
+	glBindVertexArray(voxelModel->GetVAO());
 
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
@@ -472,13 +548,19 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 	SceneOptions input = *static_cast<const SceneOptions*>(value);
 
 	if(obj->options.skipNoTexture != input.skipNoTexture) {
-		obj->options = input;
+		obj->options.skipNoTexture = input.skipNoTexture;
 
 		obj->Voxelize();
 		obj->MipMap();
+	} else if(obj->options.lightDir != input.lightDir) {
+		obj->SetupShadowMatrix();
+		obj->UpdateBuffers();
+		//obj->Voxelize();
+		//obj->MipMap();
 	} else {
 		obj->options = input;
 	}
+
 }
 
 void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {

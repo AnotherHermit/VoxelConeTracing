@@ -79,15 +79,19 @@ void APIENTRY openglCallbackFunction(
 	(void)severity; (void)length; (void)userParam;
 
 	switch(id) {
-		case 131185:
+		case 131185: // Buffer detailed info
 			return;
-		case 131218:
+		case 131218: // Nvidia Shader complilation performance warning
+			return;
+		case 131186: // Memory copied from Device to Host
+			return;		
+		case 131204: // Texture state 0 is base level inconsistent
 			return;
 		default:
 			break;
 	}
 	
-	fprintf(stderr, "%s\n\n", message);
+	fprintf(stderr, "ID: %d\n %s\n\n",id, message);
 	if(severity == GL_DEBUG_SEVERITY_HIGH) {
 		fprintf(stderr, "Aborting...\n");
 		abort();
@@ -165,42 +169,55 @@ bool Program::Init() {
 	// Calculate mipmaps
 	shaders.mipmap = CompileComputeShader("src/shaders/mipmap.comp");
 
+	// Create shadowmap
+	shaders.shadowMap = loadShaders("src/shaders/shadowMap.vert", "src/shaders/shadowMap.frag");
+
+	// Inject light(!)
+	shaders.lightInjection = CompileComputeShader("src/shaders/lightInjection.comp");
+
 	// TODO: Make this a separate function
 	// Set constant uniforms for the drawing programs
 	glUseProgram(shaders.texture);
-	glUniform1i(glGetUniformLocation(shaders.texture, "diffuseUnit"), 0);
+	glUniform1i(DIFF_UNIT, 0);
 
 	glUseProgram(shaders.mask);
-	glUniform1i(glGetUniformLocation(shaders.mask, "diffuseUnit"), 0);
-	glUniform1i(glGetUniformLocation(shaders.mask, "maskUnit"), 1);
+	glUniform1i(DIFF_UNIT, 0);
+	glUniform1i(MASK_UNIT, 1);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders.voxelize);
-	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelTextures"), 2);
-	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders.voxelize, "voxelDataNextLevel"), 4);
+	glUniform1i(VOXEL_TEXTURE, 2);
+	glUniform1i(VOXEL_DATA, 3);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders.voxelizeTexture);
-	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "diffuseUnit"), 0);
-	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelTextures"), 2);
-	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders.voxelizeTexture, "voxelDataNextLevel"), 4);
+	glUniform1i(DIFF_UNIT, 0);
+	glUniform1i(VOXEL_TEXTURE, 2);
+	glUniform1i(VOXEL_DATA, 3);
 
 	// Set constant uniforms for simple triangle drawing
 	glUseProgram(shaders.singleTriangle);
-	glUniform1i(glGetUniformLocation(shaders.singleTriangle, "voxelTextures"), 2);
-	glUniform1i(glGetUniformLocation(shaders.singleTriangle, "voxelData"), 3);
+	glUniform1i(VOXEL_TEXTURE, 2);
+	glUniform1i(VOXEL_DATA, 3);
+	glUniform1i(SHADOW_UNIT, 5);
 
 	// Set constant uniforms for drawing the voxel overlay
 	glUseProgram(shaders.voxel);
-	glUniform1i(glGetUniformLocation(shaders.voxel, "voxelData"), 3);
+	glUniform1i(VOXEL_DATA, 3);
 
 	// Set constant uniforms for calculating mipmaps
 	glUseProgram(shaders.mipmap);
-	glUniform1i(glGetUniformLocation(shaders.mipmap, "voxelData"), 3);
-	glUniform1i(glGetUniformLocation(shaders.mipmap, "voxelDataNextLevel"), 4);
+	glUniform1i(VOXEL_DATA, 3);
+	glUniform1i(VOXEL_DATA_NEXT, 4);
 
+	// Set constants uniforms for calculating shadowmaps
+	glUseProgram(shaders.shadowMap);
+	// glUniform1i(SHADOW_UNIT, 5);
+
+	// Set constants uniforms for light injection
+	glUseProgram(shaders.lightInjection);
+	// glUniform1i(VOXEL_DATA, 3);
+	
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(winWidth, winWidth);
@@ -217,16 +234,18 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
+	//cornell->InjectLight();
 	cornell->MipMap();
 
-	sponza->Voxelize();
-	sponza->MipMap();
+	//sponza->Voxelize();
+	//sponza->InjectLight();
+	//sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -264,9 +283,9 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GetCurrentScene()->Voxelize();
-	// TODO: Light injection on base level voxels
-	GetCurrentScene()->MipMap();
+	//GetCurrentScene()->Voxelize();
+	//GetCurrentScene()->InjectLight();
+	//GetCurrentScene()->MipMap();
 	GetCurrentScene()->Draw();
 
 	TwDraw();

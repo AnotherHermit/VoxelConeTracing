@@ -12,7 +12,7 @@ in vec4 exPosition;
 
 out vec4 outColor;
 
-uniform vec3 diffColor;
+layout(location = 0) uniform vec3 diffColor;
 
 struct Camera {
 	mat4 WTVmatrix;

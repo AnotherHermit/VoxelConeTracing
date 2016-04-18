@@ -7,9 +7,9 @@
 
 #version 430
 
-in vec3 posValue;
-in vec3 inPosition;
-in vec3 inNormal;
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNormal;
+layout(location = 3) in vec3 posValue;
 
 out vec3 exNormal;
 out vec4 exPosition;

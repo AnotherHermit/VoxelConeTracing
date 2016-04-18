@@ -37,9 +37,6 @@ bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, Sh
 
 bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
 	if(!LoadModels(path)) return false;
-	
-	// Set both programs to the voxel drawing one
-	outModel->SetProgram(shader, 0);
 
 	// Load standard vertex data needed by all models, also creates VAO
 	outModel->SetStandardData(shapes[0].mesh.positions.size(), shapes[0].mesh.positions.data(),
@@ -171,14 +168,6 @@ bool ModelLoader::AddModels(std::vector<Model*>* models, ShaderList* shaders) {
 			model->SetMaterial(textures[shape->mesh.material_ids[0]]);
 		} else {
 			model->SetMaterial(nullptr);
-		}
-
-		if(model->hasMaskTex()) {
-			model->SetProgram(shaders->mask, shaders->voxelizeTexture);
-		} else if(model->hasDiffuseTex()) {
-			model->SetProgram(shaders->texture, shaders->voxelizeTexture);
-		} else {
-			model->SetProgram(shaders->simple, shaders->voxelize);
 		}
 
 		// Load standard vertex data needed by all models, also creates VAO

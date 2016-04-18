@@ -275,9 +275,12 @@
     <ClInclude Include="src\Scene.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\shaders\lightInjection.comp" />
     <None Include="src\shaders\maskModel.frag" />
     <None Include="src\shaders\maskModel.vert" />
     <None Include="src\shaders\mipmap.comp" />
+    <None Include="src\shaders\shadowMap.frag" />
+    <None Include="src\shaders\shadowMap.vert" />
     <None Include="src\shaders\simpleModel.frag" />
     <None Include="src\shaders\simpleModel.vert" />
     <None Include="src\shaders\singleTriangle.frag" />

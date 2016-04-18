@@ -24,7 +24,8 @@
 struct SceneParam {
 	glm::mat4 MTOmatrix[3]; // Centers and scales scene to fit inside +-1 from three different rotations
 	glm::mat4 MTWmatrix; // Matrix for voxel data
-	GLuint voxelDraw; // 
+	glm::mat4 MTShadowMatrix; // Matrix that transforms scene to lightview
+	GLuint voxelDraw; // Which texture to draw
 	GLuint view;
 	GLuint voxelRes;
 	GLuint voxelLayer;
@@ -38,6 +39,8 @@ struct SceneOptions {
 	bool drawVoxels;
 	bool drawModels;
 	bool drawTextures;
+	GLuint shadowRes;
+	glm::vec3 lightDir;
 };
 
 // The different view directions
@@ -87,14 +90,18 @@ private:
 	GLuint sparseListBuffer;
 
 	// MipMap Stuff
-	GLuint mipmapVAO;
+	GLuint shadowVAO;
 
 	// Empty framebuffer for voxelization
 	GLuint voxelFBO;
 
-	// Voxel view textures
+	// Framebuffer with depth texture for shadowmap
+	GLuint shadowFBO;
+
+	// Scene textures
 	GLuint voxel2DTex;
 	GLuint voxelTex;
+	GLuint shadowTex;
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
@@ -104,7 +111,7 @@ private:
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
 	TwStructMember sceneTwMembers[6];
-	TwStructMember sceneOptionTwMembers[4];
+	TwStructMember sceneOptionTwMembers[5];
 	TwStructMember drawIndTwMembers[2];
 	TwStructMember compIndTwMembers[1];
 	static TwType* resTwType;
@@ -126,6 +133,8 @@ private:
 	void SetupCompInd();
 	bool SetupScene(const char* path);
 	void SetupTextures();
+	void SetupShadowTexture();
+	void SetupShadowMatrix();
 
 	// Debug funtions
 	void PrintDrawIndCmd();
@@ -143,6 +152,7 @@ public:
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
+	void InjectLight();
 	void MipMap();
 
 	void UpdateBuffers();

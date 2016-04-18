@@ -69,6 +69,8 @@ struct ShaderList {
 	GLuint singleTriangle;
 	GLuint voxel;
 	GLuint mipmap;
+	GLuint shadowMap;
+	GLuint lightInjection;
 };
 
 // Draw Indirect command struct
@@ -102,6 +104,23 @@ enum SHADER_STORAGE_BINDING {
 	SPARSE_LIST
 };
 
+enum VERTEX_LOCATION_BINDING {
+	VERT_POS,
+	VERT_NORMAL,
+	VERT_TEX_COORD,
+	DATA_POS
+};
+
+enum UNIFORM_LOCATION_BINDING {
+	DIFF_COLOR, //		0
+	DIFF_UNIT, //		1
+	MASK_UNIT, //		2
+	VOXEL_TEXTURE, //	3
+	VOXEL_DATA, //		4
+	VOXEL_DATA_NEXT, // 5
+	SHADOW_UNIT, //		6
+	CURRENT_LEVEL, //	7
+};
 
 // ===== Timers =====
 

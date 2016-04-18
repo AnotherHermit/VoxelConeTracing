@@ -23,21 +23,13 @@ void Model::SetMaterial(TextureData* textureData) {
 	}
 }
 
-void Model::SetProgram(GLuint initProgram, GLuint initVoxelProgram) {
-	drawProgram = initProgram;
-	voxelProgram = initVoxelProgram;
-	useProgram = drawProgram;
-}
-
 void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 							size_t numNormals, GLfloat* normalData,
 							size_t numIndices, GLuint* indexData) {
 
 	nIndices = numIndices;
 	// Create buffers
-	glGenVertexArrays(1, &drawVAO);
-	glGenVertexArrays(1, &voxelVAO);
-	useVAO = drawVAO;
+	glGenVertexArrays(1, &vao);
 
 	glGenBuffers(1, &vertexbufferID);
 	glGenBuffers(1, &normalbufferID);
@@ -54,43 +46,19 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * numIndices, indexData, GL_STATIC_DRAW);
 
 	// Set the GPU pointers for drawing 
-	glUseProgram(drawProgram);
-	glBindVertexArray(drawVAO);
+	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
-	GLuint vPos = glGetAttribLocation(drawProgram, "inPosition");
-	glEnableVertexAttribArray(vPos);
-	glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(VERT_POS);
+	glVertexAttribPointer(VERT_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
-	GLuint vNorm = glGetAttribLocation(drawProgram, "inNormal");
-	glEnableVertexAttribArray(vNorm);
-	glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(VERT_NORMAL);
+	glVertexAttribPointer(VERT_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	if(voxelProgram != 0) {
-		// Set the GPU pointers for voxelization
-		glUseProgram(voxelProgram);
-		glBindVertexArray(voxelVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
-		vPos = glGetAttribLocation(voxelProgram, "inPosition");
-		glEnableVertexAttribArray(vPos);
-		glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
-		vNorm = glGetAttribLocation(voxelProgram, "inNormal");
-		glEnableVertexAttribArray(vNorm);
-		glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
-
-		glBindVertexArray(0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	}
 }
 
 void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
@@ -101,37 +69,22 @@ void Model::SetTextureData(size_t numTexCoords, GLfloat* texCoordData) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numTexCoords, texCoordData, GL_STATIC_DRAW);
 
 	// Set the data pointer for the draw program
-	glUseProgram(drawProgram);
-	glBindVertexArray(drawVAO);
+	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, texbufferID);
-
-	GLuint vTex = glGetAttribLocation(drawProgram, "inTexCoords");
-	glEnableVertexAttribArray(vTex);
-	glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	if(voxelProgram != 0) {
-		// Set the data pointer for the voxel program
-		glUseProgram(voxelProgram);
-		glBindVertexArray(voxelVAO);
-
-		vTex = glGetAttribLocation(voxelProgram, "inTexCoords");
-		glEnableVertexAttribArray(vTex);
-		glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	}
+	glEnableVertexAttribArray(VERT_TEX_COORD);
+	glVertexAttribPointer(VERT_TEX_COORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindVertexArray(0);
 }
 
 void Model::SetPositionData(GLuint positionBufferID) {
-	glUseProgram(drawProgram);
-	glBindVertexArray(drawVAO);
+	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, positionBufferID);
-	GLuint vVox = glGetAttribLocation(drawProgram, "inVoxelPos");
-	glEnableVertexAttribArray(vVox);
-	glVertexAttribIPointer(vVox, 1, GL_UNSIGNED_INT, 0, 0);
-	glVertexAttribDivisor(vVox, 1);
+	glEnableVertexAttribArray(DATA_POS);
+	glVertexAttribIPointer(DATA_POS, 1, GL_UNSIGNED_INT, 0, 0);
+	glVertexAttribDivisor(DATA_POS, 1);
 
 	glBindVertexArray(0);
 }

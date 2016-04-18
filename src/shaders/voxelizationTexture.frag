@@ -11,14 +11,15 @@ in vec2 intTexCoords;
 
 flat in uint domInd;
 
-uniform sampler2D diffuseUnit;
+layout(location = 1) uniform sampler2D diffuseUnit;
 
-uniform layout(R32UI) uimage2DArray voxelTextures;
-uniform layout(R32UI) uimage3D voxelData;
+layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
+layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;

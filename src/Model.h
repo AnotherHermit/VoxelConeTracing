@@ -42,7 +42,6 @@ public:
 	Model() {}
 
 	void SetMaterial(TextureData* textureData);
-	void SetProgram(GLuint initProgram, GLuint initVoxelProgram);
 
 	void SetStandardData(size_t numVertices, GLfloat* verticeData,
 			  size_t numNormals, GLfloat* normalData,
@@ -60,18 +59,14 @@ public:
 
 	void Draw();
 	void SetVoxelDraw(bool enable);
-	GLuint GetDrawProgram() { return drawProgram; }
-	GLuint GetVoxelProgram() { return voxelProgram; }
-	GLuint GetDrawVAO() { return drawVAO; }
-	GLuint GetVoxelVAO() { return voxelVAO; }
+	GLuint GetVAO() { return vao; }
 	GLuint GetDiffuseID() { return diffuseID; }
 	GLuint GetMaskID() { return maskID; }
 	glm::vec3 GetDiffColor() { return diffColor; }
 	size_t GetNumIndices() { return nIndices; }
 
 private:
-	GLuint drawProgram, voxelProgram, useProgram;
-	GLuint drawVAO, voxelVAO, useVAO;
+	GLuint vao;
 	GLuint vertexbufferID;
 	GLuint normalbufferID;
 	GLuint indexbufferID;

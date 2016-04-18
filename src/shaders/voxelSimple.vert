@@ -7,15 +7,15 @@
 
 #version 430
 
-in vec3 inPosition;
-in vec3 inNormal;
-in uint inVoxelPos;
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNormal;
+layout(location = 3) in uint inVoxelPos;
 
 out vec4 outPosition;
 out vec3 outNormal;
 out vec4 outColor;
 
-uniform usampler3D voxelData;
+layout(location = 4) uniform usampler3D voxelData;
 
 struct Camera {
 	mat4 WTVmatrix;
@@ -30,6 +30,7 @@ layout (std140, binding = 0) uniform CameraBuffer {
 struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;
