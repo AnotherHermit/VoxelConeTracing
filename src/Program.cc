@@ -212,7 +212,7 @@ bool Program::Init() {
 
 	// Set constants uniforms for calculating shadowmaps
 	glUseProgram(shaders.shadowMap);
-	// glUniform1i(SHADOW_UNIT, 5);
+	glUniform1i(SHADOW_UNIT, 5);
 
 	// Set constants uniforms for light injection
 	glUseProgram(shaders.lightInjection);
@@ -234,18 +234,18 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	//Scene* sponza = new Scene();
-	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	//scenes.push_back(sponza);
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
-	//cornell->InjectLight();
+	cornell->InjectLight();
 	cornell->MipMap();
 
-	//sponza->Voxelize();
-	//sponza->InjectLight();
-	//sponza->MipMap();
+	sponza->Voxelize();
+	sponza->InjectLight();
+	sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -283,9 +283,9 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//GetCurrentScene()->Voxelize();
-	//GetCurrentScene()->InjectLight();
-	//GetCurrentScene()->MipMap();
+	GetCurrentScene()->Voxelize();
+	GetCurrentScene()->InjectLight();
+	GetCurrentScene()->MipMap();
 	GetCurrentScene()->Draw();
 
 	TwDraw();

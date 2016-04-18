@@ -125,7 +125,6 @@ private:
 	// Init functions
 	bool InitAntBar();
 	void InitBuffers();
-	void InitMipMap();
 	bool InitVoxel();
 	
 	// Setup functions

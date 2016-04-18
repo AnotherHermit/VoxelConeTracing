@@ -7,9 +7,11 @@
 
 #version 430
 
-layout(location = 4) uniform layout(R16F) image2D voxelData;
+layout(location = 6) uniform layout(R32UI) uimage2D shadowMap;
+//layout(location = 0) out float shadow;
 
 void main()
 {	
-	imageStore(voxelData, ivec2(gl_FragCoord.xy), vec4(gl_FragCoord.z));
+	imageAtomicMin(shadowMap, ivec2(gl_FragCoord.xy), uint((1-gl_FragCoord.z) * 65536.0f));
+	//shadow = gl_FragCoord.z;
 }

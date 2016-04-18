@@ -84,7 +84,7 @@ void main()
 	// Set constant color for textureless models
 	uint color = packARGB8(uvec4(uvec3(diffColor*255), 255));
 
-	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), color);
+	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), 0xFFFFFFFF);
 
 	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);
 

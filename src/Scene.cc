@@ -29,8 +29,8 @@ Scene::Scene() {
 	options.drawModels = true;
 	options.drawVoxels = false;
 	options.drawTextures = false;
-	options.shadowRes = 1024;
-	options.lightDir = glm::vec3(0.58f, 0.58f, 0.58f);
+	options.shadowRes = 512;
+	options.lightDir = glm::vec3(-0.58f, 0.58f, -0.58f);
 
 	param.voxelRes = 256;
 	param.voxelLayer = 0;
@@ -175,22 +175,6 @@ bool Scene::InitVoxel() {
 	return true;
 }
 
-void Scene::InitMipMap() {
-	glGenVertexArrays(1, &shadowVAO);
-
-	// Allocate enough memory for instanced drawing buffers
-	// Set the GPU pointers for drawing 
-	glUseProgram(shaders->shadowMap);
-	glBindVertexArray(shadowVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, sparseListBuffer);
-	GLuint vPos = glGetAttribLocation(shaders->mipmap, "inVoxelPos");
-	glEnableVertexAttribArray(vPos);
-	glVertexAttribIPointer(vPos, 1, GL_UNSIGNED_INT, 0, 0);
-
-	glBindVertexArray(0);
-}
-
 void Scene::SetupDrawInd() {
 	// Initialize the indirect drawing buffer
 	for(int i = MAX_MIP_MAP_LEVELS, j = 0; i >= 0; i--, j++) {
@@ -261,19 +245,22 @@ void Scene::SetupTextures() {
 void Scene::SetupShadowTexture() {
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R16F, options.shadowRes, options.shadowRes);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, options.shadowRes, options.shadowRes);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, options.shadowRes, options.shadowRes, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glGenFramebuffers(1, &shadowFBO);
 }
 
 void Scene::SetupShadowMatrix() {
 	glm::vec3 z = glm::vec3(0.0f, 0.0f, 1.0f);
-	glm::vec3 axis = glm::cross(z, glm::normalize(options.lightDir));
-	GLfloat angle = glm::radians(acos(glm::dot(z, options.lightDir)));
+	glm::vec3 axis = normalize(glm::cross(z, glm::normalize(options.lightDir)));
+	GLfloat angle = glm::degrees(acos(glm::dot(z, glm::normalize(options.lightDir))));
 
-	param.MTShadowMatrix = /*glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) */ param.MTOmatrix[2];
+	param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
 }
 
 void Scene::UpdateBuffers() {
@@ -305,7 +292,6 @@ void Scene::Voxelize() {
 	for(size_t i = 0; i <= param.numMipLevels; i++) {
 		glClearTexImage(voxelTex, (GLint)i, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	}
-	glClearTexImage(shadowTex, 0, GL_RED, GL_FLOAT, NULL);
 
 	// Reset the sparse voxel count
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, drawIndBuffer);
@@ -322,7 +308,6 @@ void Scene::Voxelize() {
 	// Bind the textures used to hold the voxelization data
 	glBindImageTexture(2, voxel2DTex, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
 	glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16F);
 
 	// All faces must be rendered
 	glDisable(GL_CULL_FACE);
@@ -355,8 +340,6 @@ void Scene::Voxelize() {
 	// Restore the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-
-	PrintBuffer(sparseListBuffer, 10);
 }
 
 void Scene::InjectLight() {
@@ -365,19 +348,24 @@ void Scene::InjectLight() {
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
 
 	// Enable rendering to framebuffer with shadow map resolution
-	glBindFramebuffer(GL_FRAMEBUFFER, voxelFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+
+	//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, options.shadowRes);
 	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, options.shadowRes);
+	//glDrawBuffer(GL_NONE);
 
 	glViewport(0, 0, options.shadowRes, options.shadowRes);
 
 	// Clear the last shadow map
-	glClearTexImage(shadowTex, 0, GL_RED, GL_FLOAT, NULL);
+	//glClearTexImage(shadowTex, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	GLuint resetWhite = 0xFFFFFFFF;
+	glClearTexImage(shadowTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &resetWhite);
 
 	// Light should also hit backsides (especially for cornell)
 	glDisable(GL_CULL_FACE);
 
-	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16F);
+	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
 	// Create the shadow map texture
 	for(auto model = models->begin(); model != models->end(); model++) {
@@ -396,8 +384,6 @@ void Scene::InjectLight() {
 	// Restore the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-
-	//glClearTexImage(shadowTex, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void Scene::MipMap() {
@@ -415,8 +401,6 @@ void Scene::MipMap() {
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 	}
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
-
-
 }
 
 void Scene::DrawTextures() {
