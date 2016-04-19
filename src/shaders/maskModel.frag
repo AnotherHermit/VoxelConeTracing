@@ -26,6 +26,23 @@ layout (std140, binding = 0) uniform CameraBuffer {
 	Camera cam;
 };
 
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
+	vec3 lightDir;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
+};
+
+layout (std140, binding = 1) uniform SceneBuffer {
+	SceneParams scene;
+};
+
 struct ShadeParams {
 	vec3 n;
 	vec3 s;
@@ -53,7 +70,7 @@ float calcSpecShade(vec3 r, vec3 v, float specCoeff) {
 void main()
 {	
 	// Calculate all necessary parameters
-	ShadeParams sp = calcShadeParams(exNormal, vec3(0.58,0.58,0.58), exPosition, cam.WTVmatrix);
+	ShadeParams sp = calcShadeParams(exNormal, scene.lightDir, exPosition, cam.WTVmatrix);
 
 	// Calculate diffuse and specular light
 	float diff = calcDiffShade(sp.s, sp.n);

@@ -30,8 +30,8 @@ Scene::Scene() {
 	options.drawVoxels = false;
 	options.drawTextures = false;
 	options.shadowRes = 512;
-	options.lightDir = glm::vec3(-0.58f, 0.58f, -0.58f);
 
+	param.lightDir = glm::vec3(0.58f, 0.58f, 0.58f);
 	param.voxelRes = 256;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
@@ -118,9 +118,8 @@ bool Scene::InitAntBar() {
 		sceneOptionTwMembers[1] = { "DrawVoxels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawVoxels), "  " };
 		sceneOptionTwMembers[2] = { "DrawModels", TW_TYPE_BOOL8, offsetof(SceneOptions, drawModels), "  " };
 		sceneOptionTwMembers[3] = { "DrawVoxelTextures", TW_TYPE_BOOL8, offsetof(SceneOptions, drawTextures), " key=t " };
-		sceneOptionTwMembers[4] = { "LightDirection", TW_TYPE_DIR3F, offsetof(SceneOptions, lightDir), "  " };
 		sceneOptionsTwStruct = new TwType;
-		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 5, sizeof(SceneOptions), NULL, NULL);
+		*sceneOptionsTwStruct = TwDefineStruct("SceneOptionsStruct", sceneOptionTwMembers, 4, sizeof(SceneOptions), NULL, NULL);
 
 		drawIndTwMembers[0] = { "InstanceCount", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, instanceCount), " readonly=true " };
 		drawIndTwMembers[1] = { "BaseInstance", TW_TYPE_UINT32, offsetof(DrawElementsIndirectCommand, baseInstance), " readonly=true " };
@@ -257,10 +256,21 @@ void Scene::SetupShadowTexture() {
 
 void Scene::SetupShadowMatrix() {
 	glm::vec3 z = glm::vec3(0.0f, 0.0f, 1.0f);
-	glm::vec3 axis = normalize(glm::cross(z, glm::normalize(options.lightDir)));
-	GLfloat angle = glm::degrees(acos(glm::dot(z, glm::normalize(options.lightDir))));
+	glm::vec3 l = glm::normalize(param.lightDir);
+	glm::vec3 axis = glm::cross(l, z);
+	if(glm::length(axis) < glm::epsilon<float>()) {
+		param.MTShadowMatrix = glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
+	} else {
+		axis = normalize(axis);
+		GLfloat angle = acos(glm::dot(z, l));
 
-	param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
+		param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
+	}
+
+	// TODO: Only update the buffer after light direction has actually changed
+	// Upload new params to GPU
+	glBindBufferBase(GL_UNIFORM_BUFFER, SCENE, sceneBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, NULL, sizeof(SceneParam), &param);
 }
 
 void Scene::UpdateBuffers() {
@@ -343,6 +353,9 @@ void Scene::Voxelize() {
 }
 
 void Scene::InjectLight() {
+	// Update the direction of the light
+	SetupShadowMatrix();
+
 	// Setup framebuffer for rendering offscreen
 	GLint origViewportSize[4];
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
@@ -536,11 +549,6 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 
 		obj->Voxelize();
 		obj->MipMap();
-	} else if(obj->options.lightDir != input.lightDir) {
-		obj->SetupShadowMatrix();
-		obj->UpdateBuffers();
-		//obj->Voxelize();
-		//obj->MipMap();
 	} else {
 		obj->options = input;
 	}
@@ -549,6 +557,9 @@ void TW_CALL Scene::SetSceneOptionsCB(const void* value, void* clientData) {
 
 void TW_CALL Scene::GetSceneOptionsCB(void* value, void* clientData) {
 	*static_cast<SceneOptions*>(value) = static_cast<Scene*>(clientData)->options;
+	//SceneOptions* temp = static_cast<SceneOptions*>(value);
+	//*temp->lightDir = NULL;
+
 }
 
 void TW_CALL Scene::SetDrawIndCB(const void* value, void* clientData) {

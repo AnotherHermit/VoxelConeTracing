@@ -31,6 +31,7 @@ struct SceneParams {
 	mat4 MTOmatrix[3];
 	mat4 MTWmatrix;
 	mat4 MTShadowMatrix;
+	vec3 lightDir;
 	uint voxelDraw;
 	uint view;
 	uint voxelRes;

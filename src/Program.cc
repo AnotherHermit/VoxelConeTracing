@@ -234,18 +234,18 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
 	cornell->InjectLight();
 	cornell->MipMap();
 
-	sponza->Voxelize();
-	sponza->InjectLight();
-	sponza->MipMap();
+	//sponza->Voxelize();
+	//sponza->InjectLight();
+	//sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -258,6 +258,7 @@ bool Program::Init() {
 
 	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarRW(antBar, "LightDir", TW_TYPE_DIR3F, GetCurrentScene()->GetLightDir(), "  group=Scene ");
 
 #ifdef DEBUG
 	TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");

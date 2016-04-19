@@ -15,6 +15,8 @@
 #include "Model.h"
 #include "GL_utilities.h"
 
+#include "glm\gtc\type_ptr.hpp"
+
 #define MAX_MIP_MAP_LEVELS 9
 #define MAX_VOXEL_RES 512
 // 512 ^ 3
@@ -25,6 +27,7 @@ struct SceneParam {
 	glm::mat4 MTOmatrix[3]; // Centers and scales scene to fit inside +-1 from three different rotations
 	glm::mat4 MTWmatrix; // Matrix for voxel data
 	glm::mat4 MTShadowMatrix; // Matrix that transforms scene to lightview
+	glm::vec3 lightDir;
 	GLuint voxelDraw; // Which texture to draw
 	GLuint view;
 	GLuint voxelRes;
@@ -40,7 +43,6 @@ struct SceneOptions {
 	bool drawModels;
 	bool drawTextures;
 	GLuint shadowRes;
-	glm::vec3 lightDir;
 };
 
 // The different view directions
@@ -111,7 +113,7 @@ private:
 	TwEnumVal viewTwEnum[3];
 	TwEnumVal resTwEnum[5];
 	TwStructMember sceneTwMembers[6];
-	TwStructMember sceneOptionTwMembers[5];
+	TwStructMember sceneOptionTwMembers[4];
 	TwStructMember drawIndTwMembers[2];
 	TwStructMember compIndTwMembers[1];
 	static TwType* resTwType;
@@ -157,6 +159,7 @@ public:
 	void UpdateBuffers();
 
 	// AntTweakBar
+	float* GetLightDir() { return glm::value_ptr(param.lightDir); }
 	static TwType GetSceneTwType() { return *sceneTwStruct; }
 	static TwType GetSceneOptionTwType() { return *sceneOptionsTwStruct; }
 	static TwType GetDrawIndTwType() { return *drawIndTwStruct; }
