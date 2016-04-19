@@ -87,6 +87,8 @@ void APIENTRY openglCallbackFunction(
 			return;		
 		case 131204: // Texture state 0 is base level inconsistent
 			return;
+		case 131076: // Vertex attribute optimized away
+			return;
 		default:
 			break;
 	}
@@ -195,6 +197,7 @@ bool Program::Init() {
 	glUniform1i(DIFF_UNIT, 0);
 	glUniform1i(VOXEL_TEXTURE, 2);
 	glUniform1i(VOXEL_DATA, 3);
+	glUniform1i(SHADOW_UNIT, 5);
 
 	// Set constant uniforms for simple triangle drawing
 	glUseProgram(shaders.singleTriangle);
@@ -223,7 +226,7 @@ bool Program::Init() {
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(winWidth, winWidth);
 	antBar = TwNewBar("VCT");
-	TwDefine(" VCT refresh=0.1 size='300 520' valueswidth=140 ");
+	TwDefine(" VCT refresh=0.1 size='300 700' valueswidth=140 ");
 	TwDefine(" VCT help='This program simulates Global Illumination with Voxel Cone Tracing.' ");
 
 	// Set up the camera
@@ -235,18 +238,18 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	//Scene* sponza = new Scene();
-	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	//scenes.push_back(sponza);
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->Voxelize();
 	cornell->InjectLight();
 	cornell->MipMap();
 
-	//sponza->Voxelize();
-	//sponza->InjectLight();
-	//sponza->MipMap();
+	sponza->Voxelize();
+	sponza->InjectLight();
+	sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
@@ -259,15 +262,13 @@ bool Program::Init() {
 
 	TwAddVarCB(antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, GetCurrentScene(), " group=Scene opened=true ");
-	TwAddVarRW(antBar, "LightDir", TW_TYPE_DIR3F, GetCurrentScene()->GetLightDir(), "  group=Scene ");
+	TwAddVarRW(antBar, "LightDir", TW_TYPE_DIR3F, GetCurrentScene()->GetLightDir(), "  group=Scene opened=true ");
 
 #ifdef DEBUG
-	TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");
-	TwAddVarCB(antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, GetCurrentScene(), " group=Scene opened=true ");
+	//TwAddVarCB(antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, GetCurrentScene(), " group=Scene opened=true ");
+	//TwAddVarCB(antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, GetCurrentScene(), " group=Scene opened=true ");
 #endif // DEBUG
-
-	// TODO: Add directional light as a control
-
+	
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
 
@@ -314,14 +315,16 @@ void TW_CALL Program::SetNewSceneCB(const void* value, void* clientData) {
 	obj->GetCurrentScene()->UpdateBuffers();
 	TwRemoveVar(obj->antBar, "SceneOptions");
 	TwRemoveVar(obj->antBar, "SceneToGPU");
+	TwRemoveVar(obj->antBar, "LightDir");
 	TwAddVarCB(obj->antBar, "SceneOptions", Scene::GetSceneOptionTwType(), Scene::SetSceneOptionsCB, Scene::GetSceneOptionsCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 	TwAddVarCB(obj->antBar, "SceneToGPU", Scene::GetSceneTwType(), Scene::SetSceneCB, Scene::GetSceneCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	TwAddVarRW(obj->antBar, "LightDir", TW_TYPE_DIR3F, obj->GetCurrentScene()->GetLightDir(), "  group=Scene opened=true ");
 
 #ifdef DEBUG
-	TwRemoveVar(obj->antBar, "DrawCmd");
-	TwRemoveVar(obj->antBar, "CompCmd");
-	TwAddVarCB(obj->antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
-	TwAddVarCB(obj->antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	//TwRemoveVar(obj->antBar, "DrawCmd");
+	//TwRemoveVar(obj->antBar, "CompCmd");
+	//TwAddVarCB(obj->antBar, "DrawCmd", Scene::GetDrawIndTwType(), Scene::SetDrawIndCB, Scene::GetDrawIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
+	//TwAddVarCB(obj->antBar, "CompCmd", Scene::GetCompIndTwType(), Scene::SetCompIndCB, Scene::GetCompIndCB, obj->GetCurrentScene(), " group=Scene opened=true ");
 #endif // DEBUG
 }
 

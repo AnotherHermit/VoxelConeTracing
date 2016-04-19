@@ -60,13 +60,22 @@ layout(std430, binding = 2) writeonly buffer SparseBuffer {
 	uint sparseList[];
 };
 
-uint packARGB8(uvec4 input) {
+struct VoxelData {
+	vec4 color;
+	uint light;
+	uint count;
+};
+
+uint packARGB8(VoxelData input) {
 	uint result = 0;
 
-	result |= (input.a & 0xFF) << 24;
-	result |= (input.r & 0xFF) << 16;
-	result |= (input.g & 0xFF) << 8;
-	result |= (input.b & 0xFF);
+	uvec3 uiColor = uvec3(input.color.rgb * 31.0f * float(input.count));
+
+	result |= (input.light & 0x0F) << 28;
+	result |= (input.count & 0x0F) << 24;
+	result |= (uiColor.r & 0xFF) << 16;
+	result |= (uiColor.g & 0xFF) << 8;
+	result |= (uiColor.b & 0xFF);
 
 	return result;
 }
@@ -83,13 +92,11 @@ uint packRG11B10(uvec3 input) {
 
 void main()
 {	
-	ivec3 voxelCoord;
 
 	// Set constant color for textureless models
-	uint color = packARGB8(uvec4(uvec3(diffColor*255), 255));
+	VoxelData data = VoxelData(vec4(diffColor, 1.0f), 0x0, 0x8);
 
-	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), 0xFFFFFFFF);
-
+	ivec3 voxelCoord;
 	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);
 
 	if(domInd == 0) {
@@ -100,21 +107,25 @@ void main()
 		voxelCoord = ivec3(gl_FragCoord.x, gl_FragCoord.y, depthCoord);
 	}
 
+
+	// Calculate shadows
 	vec3 lightCoord = shadowCoord.xyz / 2;
 	lightCoord += vec3(0.5f);
 
 	float shadowDepth = texture(shadowMap, lightCoord.xy).r / 65536.0f;
 	float bias = 2 / float(scene.voxelRes);
 
-	if(shadowDepth < (1.0f - lightCoord.z) - bias) {
-		color = 0xFF000000;
+	if(shadowDepth > (1.0f - lightCoord.z) - bias) {
+		data.light = 0x1;
 	}
 
+	uint outData = packARGB8(data);
 
-	uint prevColor = imageAtomicMax(voxelData, voxelCoord, color);
+	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), outData);
+	uint prevData = imageAtomicMax(voxelData, voxelCoord, outData);
 
 	// Check if this voxel was empty before
-	if(prevColor == 0) {
+	if(prevData == 0) {
 		// Write to number of voxels list
 		uint nextIndex = atomicAdd(drawCmd[0].instanceCount, 1);
 		

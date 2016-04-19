@@ -57,27 +57,41 @@ layout(std430, binding = 2) buffer SparseBuffer {
 	uint sparseList[];
 };
 
-uint packARGB8(uvec4 input) {
-	uint result = 0;
+struct VoxelData {
+	vec4 color;
+	uint light;
+	uint count;
+};
 
-	result |= (input.a & 0xFF) << 24;
-	result |= (input.r & 0xFF) << 16;
-	result |= (input.g & 0xFF) << 8;
-	result |= (input.b & 0xFF);
+VoxelData unpackARGB8(uint input) {
+	VoxelData data;
+	uvec3 uiColor;
 
-	return result;
+	// Put a first to improve max operation but it should not be very noticable
+	data.light = (input & 0xF0000000) >> 28;
+	data.count = (input & 0x0F000000) >> 24;
+	uiColor.r =  (input & 0x00FF0000) >> 16;
+	uiColor.g =  (input & 0x0000FF00) >> 8;
+	uiColor.b =  (input & 0x000000FF);
+
+	data.color.rgb = vec3(uiColor) / float(data.count) / 31.0f;
+	data.color.a = 1.0f;
+
+	return data;
 }
 
-uvec4 unpackARGB8(uint input) {
-	uvec4 outVec;
-	
-	// Put a first to improve max operation but it should not be very noticable
-	outVec.a = (input & 0xFF000000) >> 24;
-	outVec.r = (input & 0x00FF0000) >> 16;
-	outVec.g = (input & 0x0000FF00) >> 8;
-	outVec.b = (input & 0x000000FF);
+uint packARGB8(VoxelData input) {
+	uint result = 0;
 
-	return outVec;
+	uvec3 uiColor = uvec3(input.color.rgb * 31.0f * float(input.count));
+
+	result |= (input.light & 0xF) << 28;
+	result |= (input.count & 0xF) << 24;
+	result |= (uiColor.r & 0xFF) << 16;
+	result |= (uiColor.g & 0xFF) << 8;
+	result |= (uiColor.b & 0xFF);
+
+	return result;
 }
 
 uint packRG11B10(uvec3 input) {
@@ -110,18 +124,22 @@ void main(void)
 		uint voxelPos = currentVoxel + currentOffset;
 		uvec3 voxelCoord = unpackRG11B10(sparseList[voxelPos]);
 
-		uvec4 color = unpackARGB8(imageLoad(voxelData, ivec3(voxelCoord)).r);
-		vec4 fColor = vec4(color) / float(color.a);
-		color = uvec4(fColor * 31.0f);
+		VoxelData data = unpackARGB8(imageLoad(voxelData, ivec3(voxelCoord)).r);
+		
+		// Normalize the light counter
+		data.light = sign(data.light);
+
+		// Reset the counter
+		data.count = 1;
 
 		uint nextLevel = currentLevel + 1;
 		uint nextOffset = drawCmd[nextLevel].baseInstance;
 		uvec3 nextVoxelCoord = voxelCoord >> 1;
 
-		uint prevColor = imageAtomicAdd(voxelDataNextLevel, ivec3(nextVoxelCoord), packARGB8(color));
+		uint prevData = imageAtomicAdd(voxelDataNextLevel, ivec3(nextVoxelCoord), packARGB8(data));
 
 		// Check if this voxel was empty before
-		if(prevColor == 0) {
+		if(prevData == 0) {
 			// Write to number of voxels list
 			uint nextIndex = atomicAdd(drawCmd[nextLevel].instanceCount, 1);
 

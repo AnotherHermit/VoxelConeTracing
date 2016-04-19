@@ -44,16 +44,27 @@ layout (std140, binding = 1) uniform SceneBuffer {
 	SceneParams scene;
 };
 
-uvec4 unpackARGB8(uint input) {
-	uvec4 outVec;
-	
-	// Put a first to improve max operation but it should not be very noticable
-	outVec.a = (input & 0xFF000000) >> 24;
-	outVec.r = (input & 0x00FF0000) >> 16;
-	outVec.g = (input & 0x0000FF00) >> 8;
-	outVec.b = (input & 0x000000FF);
+struct VoxelData {
+	vec4 color;
+	uint light;
+	uint count;
+};
 
-	return outVec;
+VoxelData unpackARGB8(uint input) {
+	VoxelData data;
+	uvec3 uiColor;
+
+	// Put a first to improve max operation but it should not be very noticable
+	data.light = (input & 0xF0000000) >> 28;
+	data.count = (input & 0x0F000000) >> 24;
+	uiColor.r =  (input & 0x00FF0000) >> 16;
+	uiColor.g =  (input & 0x0000FF00) >> 8;
+	uiColor.b =  (input & 0x000000FF);
+
+	data.color.rgb = vec3(uiColor) / float(data.count) / 31.0f;
+	data.color.a = 1.0f;
+
+	return data;
 }
 
 uvec3 unpackRG11B10(uint input) {
@@ -71,8 +82,9 @@ void main(void)
 	float size = float(scene.voxelRes >> scene.mipLevel);
 	vec3 voxelPos = vec3(unpackRG11B10(inVoxelPos)) / size;
 
-	uvec4 color = unpackARGB8(textureLod(voxelData, voxelPos, float(scene.mipLevel)).r);
-	outColor = vec4(color) / float(color.a);
+	VoxelData data = unpackARGB8(textureLod(voxelData, voxelPos, float(scene.mipLevel)).r);
+	data.color.rgb *= float(sign(data.light));
+	outColor = data.color;
 	
 	outNormal = mat3(cam.WTVmatrix) * inNormal;
 	vec4 temp = cam.WTVmatrix * scene.MTWmatrix * vec4(inPosition / size + 2.0f * voxelPos - vec3(1.0f), 1.0f);
