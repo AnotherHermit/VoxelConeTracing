@@ -173,7 +173,7 @@ bool Program::Init() {
 	shaders.shadowMap = loadShaders("src/shaders/shadowMap.vert", "src/shaders/shadowMap.frag");
 
 	// Inject light(!)
-	shaders.lightInjection = CompileComputeShader("src/shaders/lightInjection.comp");
+	//shaders.lightInjection = CompileComputeShader("src/shaders/lightInjection.comp");
 
 	// TODO: Make this a separate function
 	// Set constant uniforms for the drawing programs
@@ -188,6 +188,7 @@ bool Program::Init() {
 	glUseProgram(shaders.voxelize);
 	glUniform1i(VOXEL_TEXTURE, 2);
 	glUniform1i(VOXEL_DATA, 3);
+	glUniform1i(SHADOW_UNIT, 5);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders.voxelizeTexture);
@@ -215,7 +216,7 @@ bool Program::Init() {
 	glUniform1i(SHADOW_UNIT, 5);
 
 	// Set constants uniforms for light injection
-	glUseProgram(shaders.lightInjection);
+	//glUseProgram(shaders.lightInjection);
 	// glUniform1i(VOXEL_DATA, 3);
 	
 	// Set up the AntBar

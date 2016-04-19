@@ -28,5 +28,5 @@ layout (std140, binding = 1) uniform SceneBuffer {
 
 void main(void)
 {
-	gl_Position = scene.MTShadowMatrix * vec4(inPosition, 1.0f);
+	gl_Position = scene.MTShadowMatrix * scene.MTOmatrix[2] * vec4(inPosition, 1.0f);
 }

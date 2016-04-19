@@ -264,7 +264,7 @@ void Scene::SetupShadowMatrix() {
 		axis = normalize(axis);
 		GLfloat angle = acos(glm::dot(z, l));
 
-		param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
+		param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f)));
 	}
 
 	// TODO: Only update the buffer after light direction has actually changed
@@ -318,6 +318,9 @@ void Scene::Voxelize() {
 	// Bind the textures used to hold the voxelization data
 	glBindImageTexture(2, voxel2DTex, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
 	glBindImageTexture(3, voxelTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, shadowTex);
 
 	// All faces must be rendered
 	glDisable(GL_CULL_FACE);
@@ -401,9 +404,9 @@ void Scene::InjectLight() {
 
 void Scene::MipMap() {
 	// TODO: Make mipmap handle light injection
-	for(GLuint level = 0; level < param.numMipLevels; level++) {
-		glUseProgram(shaders->mipmap);
+	glUseProgram(shaders->mipmap);
 
+	for(GLuint level = 0; level < param.numMipLevels; level++) {
 		glBindImageTexture(3, voxelTex, level, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(4, voxelTex, level + 1, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 

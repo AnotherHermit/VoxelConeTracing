@@ -7,12 +7,15 @@
 
 #version 430
 
+in vec4 shadowCoord;
+
 flat in uint domInd;
 
 layout(location = 0) uniform vec3 diffColor;
 
 layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
 layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
+layout(location = 6) uniform usampler2D shadowMap;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -96,6 +99,17 @@ void main()
 	} else {
 		voxelCoord = ivec3(gl_FragCoord.x, gl_FragCoord.y, depthCoord);
 	}
+
+	vec3 lightCoord = shadowCoord.xyz / 2;
+	lightCoord += vec3(0.5f);
+
+	float shadowDepth = texture(shadowMap, lightCoord.xy).r / 65536.0f;
+	float bias = 2 / float(scene.voxelRes);
+
+	if(shadowDepth < (1.0f - lightCoord.z) - bias) {
+		color = 0xFF000000;
+	}
+
 
 	uint prevColor = imageAtomicMax(voxelData, voxelCoord, color);
 
