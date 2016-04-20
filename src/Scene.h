@@ -153,7 +153,7 @@ public:
 	bool Init(const char* path, ShaderList* initShaders);
 	void Draw();
 	void Voxelize();
-	void InjectLight();
+	void CreateShadow();
 	void MipMap();
 
 	void UpdateBuffers();

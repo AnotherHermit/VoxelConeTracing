@@ -243,12 +243,12 @@ bool Program::Init() {
 	scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
+	cornell->CreateShadow();
 	cornell->Voxelize();
-	cornell->InjectLight();
 	cornell->MipMap();
 
+	sponza->CreateShadow();
 	sponza->Voxelize();
-	sponza->InjectLight();
 	sponza->MipMap();
 
 	// Add information to the antbar
@@ -286,8 +286,8 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	GetCurrentScene()->CreateShadow();
 	GetCurrentScene()->Voxelize();
-	GetCurrentScene()->InjectLight();
 	GetCurrentScene()->MipMap();
 	GetCurrentScene()->Draw();
 

@@ -12,6 +12,6 @@ layout(location = 6) uniform layout(R32UI) uimage2D shadowMap;
 
 void main()
 {	
-	imageAtomicMin(shadowMap, ivec2(gl_FragCoord.xy), uint((1-gl_FragCoord.z) * 65536.0f));
+	imageAtomicMin(shadowMap, ivec2(gl_FragCoord.xy), uint((1-gl_FragCoord.z) * float(0xFFFF)));
 	//shadow = gl_FragCoord.z;
 }

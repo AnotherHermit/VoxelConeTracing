@@ -112,11 +112,11 @@ void main()
 	vec3 lightCoord = shadowCoord.xyz / 2;
 	lightCoord += vec3(0.5f);
 
-	float shadowDepth = texture(shadowMap, lightCoord.xy).r / 65536.0f;
+	float shadowDepth = texture(shadowMap, lightCoord.xy).r / float(0xFFFF);
 	float bias = 2 / float(scene.voxelRes);
 
 	if(shadowDepth > (1.0f - lightCoord.z) - bias) {
-		data.light = 0x1;
+		data.light = 0x8;
 	}
 
 	uint outData = packARGB8(data);

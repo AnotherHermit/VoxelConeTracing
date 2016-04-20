@@ -343,7 +343,7 @@ void Scene::Voxelize() {
 		}
 
 		glBindVertexArray((*model)->GetVAO());
-
+		// TODO: Calcucate normal from triangle, not input geometry
 		(*model)->Draw();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -355,7 +355,7 @@ void Scene::Voxelize() {
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
 }
 
-void Scene::InjectLight() {
+void Scene::CreateShadow() {
 	// Update the direction of the light
 	SetupShadowMatrix();
 
@@ -403,7 +403,6 @@ void Scene::InjectLight() {
 }
 
 void Scene::MipMap() {
-	// TODO: Make mipmap handle light injection
 	glUseProgram(shaders->mipmap);
 
 	for(GLuint level = 0; level < param.numMipLevels; level++) {

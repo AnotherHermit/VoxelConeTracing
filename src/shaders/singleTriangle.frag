@@ -61,7 +61,7 @@ void main()
 
 	vec4 color2D = unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r).color;
 	vec4 color3D = unpackARGB8(textureLod(voxelData, vec3(exTexCoords, depth), scene.mipLevel).r).color;
-	vec4 shadowColor = vec4(vec3(texture(shadowMap, exTexCoords).r) / 65536.0f, 1.0f);
+	vec4 shadowColor = vec4(vec3(texture(shadowMap, exTexCoords).r) / float(0xFFFF), 1.0f);
 
 	outColor = color3D * float(scene.voxelDraw == 0) + color2D * float(scene.voxelDraw == 1) + shadowColor * float(scene.voxelDraw == 2);
 }
