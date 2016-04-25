@@ -54,14 +54,28 @@ VoxelData unpackARGB8(uint input) {
 	return data;
 }
 
-void main()
-{	
+subroutine vec4 DrawTexture();
+
+layout(index = 0) subroutine(DrawTexture) 
+vec4 ProjectionTexture() {
+	return unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r).color;
+}
+
+layout(index = 1) subroutine(DrawTexture)
+vec4 VoxelTexure() {
 	float size = float(scene.voxelRes >> scene.mipLevel);
 	float depth = float(scene.voxelLayer) / size;
+	return unpackARGB8(textureLod(voxelData, vec3(exTexCoords, depth), scene.mipLevel).r).color;
+}
 
-	vec4 color2D = unpackARGB8(texture(voxelTextures, vec3(exTexCoords, float(scene.view))).r).color;
-	vec4 color3D = unpackARGB8(textureLod(voxelData, vec3(exTexCoords, depth), scene.mipLevel).r).color;
-	vec4 shadowColor = vec4(vec3(texture(shadowMap, exTexCoords).r) / float(0xFFFF), 1.0f);
+layout(index = 2) subroutine(DrawTexture)
+vec4 ShadowTexture() {
+	return vec4(vec3(texture(shadowMap, exTexCoords).r) / float(0xFFFF), 1.0f);
+}
 
-	outColor = color3D * float(scene.voxelDraw == 0) + color2D * float(scene.voxelDraw == 1) + shadowColor * float(scene.voxelDraw == 2);
+layout(location = 0) subroutine uniform DrawTexture SampleTexture;
+
+void main()
+{	
+	outColor = SampleTexture();
 }

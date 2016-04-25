@@ -159,10 +159,10 @@ bool Program::Init() {
 	shaders.voxelize = loadShadersG("src/shaders/voxelization.vert", "src/shaders/voxelization.frag", "src/shaders/voxelization.geom");
 
 	// Single triangle shader for deferred shading etc.
-	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
+	shaders.singleTriangle = loadShaders("src/shaders/drawTriangle.vert", "src/shaders/drawTriangle.frag");
 
 	// Draw voxels from 3D texture
-	shaders.voxel = loadShaders("src/shaders/voxelSimple.vert", "src/shaders/voxelSimple.frag");
+	shaders.voxel = loadShaders("src/shaders/drawVoxel.vert", "src/shaders/drawVoxel.frag");
 
 	// Calculate mipmaps
 	shaders.mipmap = CompileComputeShader("src/shaders/mipmap.comp");

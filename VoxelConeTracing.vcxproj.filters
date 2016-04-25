@@ -103,18 +103,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\shaders\singleTriangle.frag">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\singleTriangle.vert">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\voxelSimple.frag">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\voxelSimple.vert">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
     <None Include="src\shaders\mipmap.comp">
       <Filter>Source Files\shaders\MipMap</Filter>
     </None>
@@ -138,6 +126,18 @@
     </None>
     <None Include="src\shaders\voxelization.vert">
       <Filter>Source Files\shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\drawVoxel.frag">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawVoxel.vert">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawTriangle.frag">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawTriangle.vert">
+      <Filter>Source Files\shaders\Drawing</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

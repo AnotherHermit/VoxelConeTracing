@@ -280,13 +280,13 @@
     <None Include="src\shaders\mipmap.comp" />
     <None Include="src\shaders\shadowMap.frag" />
     <None Include="src\shaders\shadowMap.vert" />
-    <None Include="src\shaders\singleTriangle.frag" />
-    <None Include="src\shaders\singleTriangle.vert" />
+    <None Include="src\shaders\drawTriangle.frag" />
+    <None Include="src\shaders\drawTriangle.vert" />
     <None Include="src\shaders\voxelization.frag" />
     <None Include="src\shaders\voxelization.geom" />
     <None Include="src\shaders\voxelization.vert" />
-    <None Include="src\shaders\voxelSimple.frag" />
-    <None Include="src\shaders\voxelSimple.vert" />
+    <None Include="src\shaders\drawVoxel.frag" />
+    <None Include="src\shaders\drawVoxel.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\shaderHelpers.txt" />

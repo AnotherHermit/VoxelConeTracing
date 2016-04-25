@@ -333,7 +333,6 @@ void Scene::Voxelize() {
 			continue;
 		}
 
-		// TODO: Calcucate normal from triangle, not input geometry
 		(*model)->Voxelize();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -417,6 +416,8 @@ void Scene::DrawTextures() {
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
+
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &param.voxelDraw);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
