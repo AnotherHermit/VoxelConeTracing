@@ -275,24 +275,16 @@
     <ClInclude Include="src\Scene.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\shaders\lightInjection.comp" />
-    <None Include="src\shaders\maskModel.frag" />
-    <None Include="src\shaders\maskModel.vert" />
+    <None Include="src\shaders\drawModel.frag" />
+    <None Include="src\shaders\drawModel.vert" />
     <None Include="src\shaders\mipmap.comp" />
     <None Include="src\shaders\shadowMap.frag" />
     <None Include="src\shaders\shadowMap.vert" />
-    <None Include="src\shaders\simpleModel.frag" />
-    <None Include="src\shaders\simpleModel.vert" />
     <None Include="src\shaders\singleTriangle.frag" />
     <None Include="src\shaders\singleTriangle.vert" />
-    <None Include="src\shaders\textureModel.frag" />
-    <None Include="src\shaders\textureModel.vert" />
-    <None Include="src\shaders\voxelizationSimple.frag" />
-    <None Include="src\shaders\voxelizationSimple.geom" />
-    <None Include="src\shaders\voxelizationSimple.vert" />
-    <None Include="src\shaders\voxelizationTexture.frag" />
-    <None Include="src\shaders\voxelizationTexture.geom" />
-    <None Include="src\shaders\voxelizationTexture.vert" />
+    <None Include="src\shaders\voxelization.frag" />
+    <None Include="src\shaders\voxelization.geom" />
+    <None Include="src\shaders\voxelization.vert" />
     <None Include="src\shaders\voxelSimple.frag" />
     <None Include="src\shaders\voxelSimple.vert" />
   </ItemGroup>

@@ -325,26 +325,16 @@ void Scene::Voxelize() {
 	// All faces must be rendered
 	glDisable(GL_CULL_FACE);
 
+	glUseProgram(shaders->voxelize);
+
 	for(auto model = models->begin(); model != models->end(); model++) {
 		// Don't draw models without texture if set to skip
 		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
 
-		// Bind the color texture
-		if((*model)->hasDiffuseTex()) {
-			glUseProgram(shaders->voxelizeTexture);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
-		} else {
-			glUseProgram(shaders->voxelize);
-			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(0, diffColor.r, diffColor.g, diffColor.b);
-		}
-
-		glBindVertexArray((*model)->GetVAO());
 		// TODO: Calcucate normal from triangle, not input geometry
-		(*model)->Draw();
+		(*model)->Voxelize();
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
@@ -383,6 +373,8 @@ void Scene::CreateShadow() {
 
 	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
+	glUseProgram(shaders->shadowMap);
+
 	// Create the shadow map texture
 	for(auto model = models->begin(); model != models->end(); model++) {
 
@@ -390,11 +382,8 @@ void Scene::CreateShadow() {
 		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
-
-		glUseProgram(shaders->shadowMap);
-		glBindVertexArray((*model)->GetVAO());
-
-		(*model)->Draw();
+		
+		(*model)->ShadowMap();
 	}
 
 	// Restore the framebuffer
@@ -433,37 +422,15 @@ void Scene::DrawTextures() {
 }
 
 void Scene::DrawScene() {
+	glUseProgram(shaders->drawScene);
+
 	for(auto model = models->begin(); model != models->end(); model++) {
 
 		// Don't draw models without texture
 		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
 			continue;
 		}
-
-		glEnable(GL_CULL_FACE);
-
-		// Bind the color texture
-		if((*model)->hasDiffuseTex()) {
-			glUseProgram(shaders->texture);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, (*model)->GetDiffuseID());
-		} else {
-			glUseProgram(shaders->simple);
-			glm::vec3 diffColor = (*model)->GetDiffColor();
-			glUniform3f(0, diffColor.r, diffColor.g, diffColor.b);
-		}
-
-		// Bind the masking texture
-		if((*model)->hasMaskTex()) {
-			glDisable(GL_CULL_FACE);
-			glUseProgram(shaders->mask);
-
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, (*model)->GetMaskID());
-		}
-
-		glBindVertexArray((*model)->GetVAO());
-
+		
 		(*model)->Draw();
 	}
 }

@@ -30,6 +30,7 @@
 // ===== Texture Struct =====
 
 struct TextureData {
+	GLuint subID;
 	GLuint diffuseID;
 	GLuint maskID;
 	glm::vec3 diffColor;
@@ -39,16 +40,13 @@ struct TextureData {
 
 class Model {
 public:
-	Model() {}
-
-	void SetMaterial(TextureData* textureData);
+	Model();
 
 	void SetStandardData(size_t numVertices, GLfloat* verticeData,
 			  size_t numNormals, GLfloat* normalData,
 			  size_t numIndices, GLuint* indexData);
 
-	// Set standard data must be used first since it creates the vao
-	// TODO: remove the ordering dependecy
+	void SetMaterial(TextureData* textureData);
 	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
 
 	// Set position buffer data, only for voxel model
@@ -58,6 +56,8 @@ public:
 	bool hasMaskTex();
 
 	void Draw();
+	void Voxelize();
+	void ShadowMap();
 	void SetVoxelDraw(bool enable);
 	GLuint GetVAO() { return vao; }
 	GLuint GetDiffuseID() { return diffuseID; }
@@ -76,6 +76,8 @@ private:
 	GLuint diffuseID;
 	GLuint maskID;
 	GLuint texbufferID;
+	GLuint subDrawID;
+	GLuint subVoxelizeID;
 
 	//
 	glm::vec3 diffColor;

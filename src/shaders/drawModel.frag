@@ -13,6 +13,7 @@ in vec2 exTexCoords;
 
 out vec4 outColor;
 
+layout(location = 0) uniform vec3 diffColor;
 layout(location = 1) uniform sampler2D diffuseUnit;
 layout(location = 2) uniform sampler2D maskUnit;
 
@@ -67,6 +68,25 @@ float calcSpecShade(vec3 r, vec3 v, float specCoeff) {
 	return max(0.0, pow(dot(r, v), specCoeff));
 }
 
+subroutine vec4 SampleColor();
+
+layout(index = 0) subroutine(SampleColor) 
+vec4 DiffuseColor() {
+	return vec4(diffColor, 1.0f);
+}
+
+layout(index = 1) subroutine(SampleColor)
+vec4 TextureColor() {
+	return vec4(texture(diffuseUnit, exTexCoords).rgb, 1.0f);
+}
+
+layout(index = 2) subroutine(SampleColor)
+vec4 MaskColor() {
+	return vec4(texture(diffuseUnit, exTexCoords).rgb, texture(maskUnit, exTexCoords).r);
+}
+
+layout(location = 0) subroutine uniform SampleColor GetColor;
+
 void main()
 {	
 	// Calculate all necessary parameters
@@ -77,14 +97,11 @@ void main()
 	float spec = calcSpecShade(sp.r, sp.v, 5.0f);
 
 	// Set constant color for textured models
-	vec3 color = texture(diffuseUnit, exTexCoords).rgb;
+	vec4 color = GetColor();
 
 	// Apply light to texture
-	vec3 shadedColor = color * (diff + spec);
-
-	// Mask the texture color
-	float outAlpha = texture(maskUnit, exTexCoords).r;
+	color.rgb *= (diff + spec);
 
 	// Output complete color
-	outColor = vec4(shadedColor, outAlpha);
+	outColor = color;
 }

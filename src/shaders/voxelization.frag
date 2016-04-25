@@ -12,6 +12,7 @@ in vec4 shadowCoord;
 
 flat in uint domInd;
 
+layout(location = 0) uniform vec3 diffColor;
 layout(location = 1) uniform sampler2D diffuseUnit;
 
 layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
@@ -91,10 +92,24 @@ uint packRG11B10(uvec3 input) {
 	return result;
 }
 
+subroutine vec4 SampleColor();
+
+layout(index = 0) subroutine(SampleColor) 
+vec4 DiffuseColor() {
+	return vec4(diffColor, 1.0f);
+}
+
+layout(index = 1) subroutine(SampleColor)
+vec4 TextureColor() {
+	return vec4(texture(diffuseUnit, intTexCoords).rgb, 1.0f);
+}
+
+layout(location = 0) subroutine uniform SampleColor GetColor;
+
 void main()
 {	
 	// Set constant color for textured models
-	VoxelData data = VoxelData(texture(diffuseUnit, intTexCoords), 0x0, 0x8);
+	VoxelData data = VoxelData(GetColor(), 0x0, 0x8);
 
 	ivec3 voxelCoord;
 	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);

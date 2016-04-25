@@ -67,14 +67,18 @@ bool ModelLoader::LoadTextures() {
 
 	for(size_t i = 0; i < materials.size(); i++) {
 		TextureData* data = new TextureData;
-
+		
+		// Set subroutine to use;
+		data->subID = CONSTANT;
+		
 		// Load color texture of available
-		data->diffuseID = -1;
+		data->diffuseID = 0;
 		startPath = "resources/";
 		if(!materials[i].diffuse_texname.empty()) {
 			GLuint texID = LoadTexture(startPath.append(materials[i].diffuse_texname).c_str());
-			if(texID != -1) {
+			if(texID != 0) {
 				data->diffuseID = texID;
+				data->subID = TEXTURE;
 			} else {
 				std::cerr << "Tried loading texture: " << startPath << " but didn't succeed.\n";
 				//return false;
@@ -82,12 +86,13 @@ bool ModelLoader::LoadTextures() {
 		}
 
 		// Load texture mask if available
-		data->maskID = -1;
+		data->maskID = 0;
 		startPath = "resources/";
 		if(!materials[i].alpha_texname.empty()) {
 			GLuint texID = LoadTexture(startPath.append(materials[i].alpha_texname).c_str());
-			if(texID != -1) {
+			if(texID != 0) {
 				data->maskID = texID;
+				data->subID = MASK;
 			} else {
 				std::cerr << "Tried loading texture: " << startPath << " but didn't succeed.\n";
 				//return false;
@@ -111,7 +116,7 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 
 	// No texture at the path set id as if no texture was 
 	if(textureData == NULL) {
-		return -1;
+		return 0;
 	}
 
 	glGenTextures(1, &texID);
@@ -163,17 +168,15 @@ bool ModelLoader::AddModels(std::vector<Model*>* models, ShaderList* shaders) {
 	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
 		Model* model = new Model();
 
-		// Set material first since this determines shader program
-		if(shape->mesh.material_ids[0] != -1) {
-			model->SetMaterial(textures[shape->mesh.material_ids[0]]);
-		} else {
-			model->SetMaterial(nullptr);
-		}
-
 		// Load standard vertex data needed by all models, also creates VAO
 		model->SetStandardData(shape->mesh.positions.size(), shape->mesh.positions.data(),
 							   shape->mesh.normals.size(), shape->mesh.normals.data(),
 							   shape->mesh.indices.size(), shape->mesh.indices.data());
+
+		// Set material
+		if(shape->mesh.material_ids[0] != -1) {
+			model->SetMaterial(textures[shape->mesh.material_ids[0]]);
+		}
 
 		// If a texture is available also load texture coordinate data
 		if(model->hasDiffuseTex()) {

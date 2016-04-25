@@ -152,15 +152,11 @@ bool Program::Init() {
 	glBindBufferBase(GL_UNIFORM_BUFFER, PROGRAM, programBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(ProgramStruct), &param, GL_STREAM_DRAW);
 	
-	// TODO: See if it is possible to recude number of shaders by using subroutines
 	// Load shaders for drawing
-	shaders.simple = loadShaders("src/shaders/simpleModel.vert", "src/shaders/simpleModel.frag");
-	shaders.texture = loadShaders("src/shaders/textureModel.vert", "src/shaders/textureModel.frag");
-	shaders.mask = loadShaders("src/shaders/maskModel.vert", "src/shaders/maskModel.frag");
+	shaders.drawScene = loadShaders("src/shaders/drawModel.vert", "src/shaders/drawModel.frag");
 
 	// Load shaders for voxelization
-	shaders.voxelize = loadShadersG("src/shaders/voxelizationSimple.vert", "src/shaders/voxelizationSimple.frag", "src/shaders/voxelizationSimple.geom");
-	shaders.voxelizeTexture = loadShadersG("src/shaders/voxelizationTexture.vert", "src/shaders/voxelizationTexture.frag", "src/shaders/voxelizationTexture.geom");
+	shaders.voxelize = loadShadersG("src/shaders/voxelization.vert", "src/shaders/voxelization.frag", "src/shaders/voxelization.geom");
 
 	// Single triangle shader for deferred shading etc.
 	shaders.singleTriangle = loadShaders("src/shaders/singleTriangle.vert", "src/shaders/singleTriangle.frag");
@@ -173,27 +169,15 @@ bool Program::Init() {
 
 	// Create shadowmap
 	shaders.shadowMap = loadShaders("src/shaders/shadowMap.vert", "src/shaders/shadowMap.frag");
-
-	// Inject light(!)
-	//shaders.lightInjection = CompileComputeShader("src/shaders/lightInjection.comp");
-
+	
 	// TODO: Make this a separate function
 	// Set constant uniforms for the drawing programs
-	glUseProgram(shaders.texture);
-	glUniform1i(DIFF_UNIT, 0);
-
-	glUseProgram(shaders.mask);
+	glUseProgram(shaders.drawScene);
 	glUniform1i(DIFF_UNIT, 0);
 	glUniform1i(MASK_UNIT, 1);
 
 	// Set constant uniforms for voxel programs
 	glUseProgram(shaders.voxelize);
-	glUniform1i(VOXEL_TEXTURE, 2);
-	glUniform1i(VOXEL_DATA, 3);
-	glUniform1i(SHADOW_UNIT, 5);
-
-	// Set constant uniforms for voxel programs
-	glUseProgram(shaders.voxelizeTexture);
 	glUniform1i(DIFF_UNIT, 0);
 	glUniform1i(VOXEL_TEXTURE, 2);
 	glUniform1i(VOXEL_DATA, 3);
@@ -217,10 +201,6 @@ bool Program::Init() {
 	// Set constants uniforms for calculating shadowmaps
 	glUseProgram(shaders.shadowMap);
 	glUniform1i(SHADOW_UNIT, 5);
-
-	// Set constants uniforms for light injection
-	//glUseProgram(shaders.lightInjection);
-	// glUniform1i(VOXEL_DATA, 3);
 	
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);

@@ -61,11 +61,8 @@ void updateScreenSizeForFBOHandler(int w, int h); // Temporary workaround to inf
 
 // All available shaders
 struct ShaderList {
-	GLuint simple;
-	GLuint texture;
-	GLuint mask;
+	GLuint drawScene;
 	GLuint voxelize;
-	GLuint voxelizeTexture;
 	GLuint singleTriangle;
 	GLuint voxel;
 	GLuint mipmap;
@@ -120,6 +117,12 @@ enum UNIFORM_LOCATION_BINDING {
 	VOXEL_DATA_NEXT, // 5
 	SHADOW_UNIT, //		6
 	CURRENT_LEVEL, //	7
+};
+
+enum SUBROUTINE_INDICES {
+	CONSTANT,
+	TEXTURE,
+	MASK
 };
 
 // ===== Timers =====

@@ -103,42 +103,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\shaders\simpleModel.vert">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\simpleModel.frag">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\textureModel.frag">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\textureModel.vert">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\maskModel.frag">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\maskModel.vert">
-      <Filter>Source Files\shaders\Drawing</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationSimple.frag">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationSimple.vert">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationTexture.frag">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationTexture.vert">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationSimple.geom">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
-    <None Include="src\shaders\voxelizationTexture.geom">
-      <Filter>Source Files\shaders\Voxelization</Filter>
-    </None>
     <None Include="src\shaders\singleTriangle.frag">
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
@@ -160,8 +124,20 @@
     <None Include="src\shaders\shadowMap.vert">
       <Filter>Source Files\shaders\Light Injection</Filter>
     </None>
-    <None Include="src\shaders\lightInjection.comp">
-      <Filter>Source Files\shaders\Light Injection</Filter>
+    <None Include="src\shaders\drawModel.frag">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawModel.vert">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\voxelization.frag">
+      <Filter>Source Files\shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\voxelization.geom">
+      <Filter>Source Files\shaders\Voxelization</Filter>
+    </None>
+    <None Include="src\shaders\voxelization.vert">
+      <Filter>Source Files\shaders\Voxelization</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
