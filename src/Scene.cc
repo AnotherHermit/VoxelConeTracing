@@ -242,16 +242,26 @@ void Scene::SetupTextures() {
 }
 
 void Scene::SetupShadowTexture() {
+	glGenFramebuffers(1, &shadowFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, options.shadowRes, options.shadowRes);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, options.shadowRes, options.shadowRes, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, options.shadowRes, options.shadowRes);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, options.shadowRes, options.shadowRes, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-	glGenFramebuffers(1, &shadowFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
+
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Scene::SetupShadowMatrix() {
@@ -352,25 +362,29 @@ void Scene::CreateShadow() {
 	GLint origViewportSize[4];
 	glGetIntegerv(GL_VIEWPORT, origViewportSize);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	// Enable rendering to framebuffer with shadow map resolution
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 
 	//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, options.shadowRes);
-	glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, options.shadowRes);
+	//glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, options.shadowRes);
+	//glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, options.shadowRes);
 	//glDrawBuffer(GL_NONE);
 
 	glViewport(0, 0, options.shadowRes, options.shadowRes);
-
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// Clear the last shadow map
 	//glClearTexImage(shadowTex, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	GLuint resetWhite = 0xFFFFFFFF;
-	glClearTexImage(shadowTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &resetWhite);
+	//glClearTexImage(shadowTex, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &resetWhite);
 
 	// Light should also hit backsides (especially for cornell)
 	glDisable(GL_CULL_FACE);
 
-	glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	//glBindImageTexture(5, shadowTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+
+
 
 	glUseProgram(shaders->shadowMap);
 

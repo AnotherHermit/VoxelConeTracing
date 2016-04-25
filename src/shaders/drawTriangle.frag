@@ -70,7 +70,7 @@ vec4 VoxelTexure() {
 
 layout(index = 2) subroutine(DrawTexture)
 vec4 ShadowTexture() {
-	return vec4(vec3(texture(shadowMap, exTexCoords).r) / float(0xFFFF), 1.0f);
+	return vec4(vec3(texture(shadowMap, exTexCoords).r) /* float(0xFFFF)*/, 1.0f);
 }
 
 layout(location = 0) subroutine uniform DrawTexture SampleTexture;
