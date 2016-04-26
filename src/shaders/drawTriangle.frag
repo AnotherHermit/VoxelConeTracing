@@ -14,6 +14,7 @@ layout(location = 3) uniform usampler2DArray voxelTextures;
 layout(location = 4) uniform usampler3D voxelData;
 layout(location = 6) uniform sampler2D shadowMap;
 layout(location = 8) uniform sampler2DArray sceneTex;
+layout(location = 9) uniform sampler2D sceneDepth;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -75,8 +76,23 @@ vec4 ShadowTexture() {
 }
 
 layout(index = 3) subroutine(DrawTexture)
-vec4 SceneTexture() {
+vec4 SceneColor() {
 	return texture(sceneTex, vec3(exTexCoords, 0.0f));
+}
+
+layout(index = 4) subroutine(DrawTexture)
+vec4 ScenePosition() {
+	return texture(sceneTex, vec3(exTexCoords, 1.0f));
+}
+
+layout(index = 5) subroutine(DrawTexture)
+vec4 SceneNormal() {
+	return texture(sceneTex, vec3(exTexCoords, 2.0f));
+}
+
+layout(index = 6) subroutine(DrawTexture)
+vec4 SceneDepth() {
+	return texture(sceneDepth, exTexCoords);
 }
 
 layout(location = 0) subroutine uniform DrawTexture SampleTexture;

@@ -154,6 +154,7 @@ bool Program::Init() {
 	
 	// Load shaders for drawing
 	shaders.drawScene = loadShaders("src/shaders/drawModel.vert", "src/shaders/drawModel.frag");
+	shaders.drawData = loadShaders("src/shaders/drawData.vert", "src/shaders/drawData.frag");
 
 	// Load shaders for voxelization
 	shaders.voxelize = loadShadersG("src/shaders/voxelization.vert", "src/shaders/voxelization.frag", "src/shaders/voxelization.geom");
@@ -189,6 +190,7 @@ bool Program::Init() {
 	glUniform1i(VOXEL_DATA, 3);
 	glUniform1i(SHADOW_UNIT, 5);
 	glUniform1i(SCENE_UNIT, 6);
+	glUniform1i(SCENE_DEPTH, 7);
 
 	// Set constant uniforms for drawing the voxel overlay
 	glUseProgram(shaders.voxel);
@@ -198,10 +200,7 @@ bool Program::Init() {
 	glUseProgram(shaders.mipmap);
 	glUniform1i(VOXEL_DATA, 3);
 	glUniform1i(VOXEL_DATA_NEXT, 4);
-
-	// Set constants uniforms for calculating shadowmaps
-	glUseProgram(shaders.shadowMap);
-	
+		
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(winWidth, winWidth);
@@ -224,10 +223,12 @@ bool Program::Init() {
 	
 	// Initial Voxelization of the scenes
 	cornell->CreateShadow();
+	cornell->RenderData();
 	cornell->Voxelize();
 	cornell->MipMap();
 
 	//sponza->CreateShadow();
+	//sponza->RenderData();
 	//sponza->Voxelize();
 	//sponza->MipMap();
 
@@ -267,6 +268,7 @@ void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GetCurrentScene()->CreateShadow();
+	GetCurrentScene()->RenderData();
 	GetCurrentScene()->Voxelize();
 	GetCurrentScene()->MipMap();
 	GetCurrentScene()->Draw();
@@ -325,6 +327,7 @@ void Program::OnEvent(SDL_Event *Event) {
 					glViewport(0, 0, winWidth, winHeight);
 					TwWindowSize(winWidth, winHeight);
 					cam->SetFrustum();
+					GetCurrentScene()->SetupSceneTextures();
 					break;
 			}
 		case SDL_KEYDOWN:

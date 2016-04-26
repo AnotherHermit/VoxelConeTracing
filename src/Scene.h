@@ -94,17 +94,16 @@ private:
 	// MipMap Stuff
 	GLuint shadowVAO;
 
-	// Empty framebuffer for voxelization
-	GLuint voxelFBO;
-
-	// Framebuffer with depth texture for shadowmap
-	GLuint shadowFBO;
+	// FBOs
+	GLuint voxelFBO; //		Empty framebuffer for voxelization
+	GLuint shadowFBO; //	Framebuffer with depth texture for shadowmap
+	GLuint sceneFBO; //		Framebuffer for deferred rendering
 
 	// Scene textures
 	GLuint voxel2DTex;
 	GLuint voxelTex;
 	GLuint shadowTex;
-	GLuint sceneTex;
+	GLuint sceneTex[2]; // Color array and depth texture
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;
@@ -134,7 +133,7 @@ private:
 	void SetupDrawInd();
 	void SetupCompInd();
 	bool SetupScene(const char* path);
-	void SetupTextures();
+	void SetupVoxelTextures();
 	void SetupShadowTexture();
 	void SetupShadowMatrix();
 
@@ -152,12 +151,14 @@ public:
 	Scene();
 
 	bool Init(const char* path, ShaderList* initShaders);
-	void Draw();
-	void Voxelize();
 	void CreateShadow();
+	void RenderData();
+	void Voxelize();
 	void MipMap();
+	void Draw();
 
 	void UpdateBuffers();
+	void SetupSceneTextures();
 
 	// AntTweakBar
 	float* GetLightDir() { return glm::value_ptr(param.lightDir); }

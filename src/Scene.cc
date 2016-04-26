@@ -47,6 +47,13 @@ Scene::Scene() {
 
 	voxel2DTex = 0;
 	voxelTex = 0;
+	shadowTex = 0;
+	sceneTex[0] = 0;
+	sceneTex[1] = 0;
+
+	sceneFBO = 0;
+	shadowFBO = 0;
+	voxelFBO = 0;
 }
 
 bool Scene::Init(const char* path, ShaderList* initShaders) {
@@ -62,7 +69,8 @@ bool Scene::Init(const char* path, ShaderList* initShaders) {
 
 	SetupDrawInd();
 	SetupCompInd();
-	SetupTextures();
+	SetupVoxelTextures();
+	SetupSceneTextures();
 	SetupShadowTexture();
 	SetupShadowMatrix();
 
@@ -105,7 +113,7 @@ bool Scene::InitAntBar() {
 		resTwType = new TwType;
 		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=3 " };
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=6 " };
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
@@ -213,7 +221,7 @@ void Scene::SetupCompInd() {
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(compIndCmd), compIndCmd, GL_STREAM_DRAW);
 }
 
-void Scene::SetupTextures() {
+void Scene::SetupVoxelTextures() {
 
 	// Generate textures for render to texture, only for debugging purposes
 	if(voxel2DTex != 0) {
@@ -241,15 +249,48 @@ void Scene::SetupTextures() {
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 }
 
-void Scene::SetupShadowTexture() {
-
-	glGenTextures(1, &sceneTex);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex);
-	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, options.shadowRes, options.shadowRes, 1);
+void Scene::SetupSceneTextures() {
+	GLint origViewportSize[4];
+	glGetIntegerv(GL_VIEWPORT, origViewportSize);
+	
+	if(sceneTex[0] != 0) {
+		glDeleteTextures(2, sceneTex);
+	}
+	glGenTextures(2, sceneTex);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex[0]);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, origViewportSize[2], origViewportSize[3], 3);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_2D, sceneTex[1]);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, origViewportSize[2], origViewportSize[3]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+	if(sceneFBO == 0) {
+		glGenFramebuffers(1, &sceneFBO);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
+
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, sceneTex[0], 0, 0);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, sceneTex[0], 0, 1);
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, sceneTex[0], 0, 2);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, sceneTex[1], 0);
+
+	GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glDrawBuffers(3, DrawBuffers);
+	glReadBuffer(GL_NONE);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Scene::SetupShadowTexture() {
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -264,13 +305,9 @@ void Scene::SetupShadowTexture() {
 	glGenFramebuffers(1, &shadowFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 
-	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, sceneTex, 0, 0);
-	//glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, sceneTex, 0, 1);
-	//glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, sceneTex, 0, 2);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
 
-	GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 }; // , GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	glDrawBuffers(1, DrawBuffers);
+	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -306,6 +343,69 @@ void Scene::UpdateBuffers() {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DRAW_IND, drawIndBuffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, COMPUTE_IND, compIndBuffer);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPARSE_LIST, sparseListBuffer);
+}
+
+void Scene::CreateShadow() {
+	// Update the direction of the light
+	SetupShadowMatrix();
+
+	// Setup framebuffer for rendering offscreen
+	GLint origViewportSize[4];
+	glGetIntegerv(GL_VIEWPORT, origViewportSize);
+	glViewport(0, 0, options.shadowRes, options.shadowRes);
+
+	// Enable rendering to framebuffer with shadow map resolution
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+
+	// Clear the last shadow map
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Light should also hit backsides (especially for cornell)
+	glDisable(GL_CULL_FACE);
+
+	glUseProgram(shaders->shadowMap);
+
+	// Create the shadow map texture
+	for(auto model = models->begin(); model != models->end(); model++) {
+
+		// Don't draw models without texture
+		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
+			continue;
+		}
+		
+		(*model)->ShadowMap();
+	}
+
+	// Restore the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
+}
+
+void Scene::RenderData() {
+	// Enable rendering to framebuffer with shadow map resolution
+	glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
+
+	// Clear the last shadow map
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Light should also hit backsides (especially for cornell)
+	glEnable(GL_CULL_FACE);
+
+	glUseProgram(shaders->drawData);
+
+	// Create the shadow map texture
+	for(auto model = models->begin(); model != models->end(); model++) {
+
+		// Don't draw models without texture
+		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
+			continue;
+		}
+
+		(*model)->Draw();
+	}
+
+	// Restore the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Scene::Voxelize() {
@@ -367,42 +467,6 @@ void Scene::Voxelize() {
 	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
 }
 
-void Scene::CreateShadow() {
-	// Update the direction of the light
-	SetupShadowMatrix();
-
-	// Setup framebuffer for rendering offscreen
-	GLint origViewportSize[4];
-	glGetIntegerv(GL_VIEWPORT, origViewportSize);
-	glViewport(0, 0, options.shadowRes, options.shadowRes);
-
-	// Enable rendering to framebuffer with shadow map resolution
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-
-	// Clear the last shadow map
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Light should also hit backsides (especially for cornell)
-	glDisable(GL_CULL_FACE);
-
-	glUseProgram(shaders->shadowMap);
-
-	// Create the shadow map texture
-	for(auto model = models->begin(); model != models->end(); model++) {
-
-		// Don't draw models without texture
-		if(options.skipNoTexture && !(*model)->hasDiffuseTex()) {
-			continue;
-		}
-		
-		(*model)->ShadowMap();
-	}
-
-	// Restore the framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(origViewportSize[0], origViewportSize[1], origViewportSize[2], origViewportSize[3]);
-}
-
 void Scene::MipMap() {
 	glUseProgram(shaders->mipmap);
 
@@ -419,6 +483,14 @@ void Scene::MipMap() {
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
+void Scene::Draw() {
+	if(options.drawTextures) DrawTextures();
+	else {
+		if(options.drawModels) DrawScene();
+		if(options.drawVoxels) DrawVoxels();
+	}
+}
+
 void Scene::DrawTextures() {
 	glUseProgram(shaders->singleTriangle);
 	glBindVertexArray(0);
@@ -430,7 +502,9 @@ void Scene::DrawTextures() {
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex[0]);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, sceneTex[1]);
 
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &param.voxelDraw);
 
@@ -461,14 +535,6 @@ void Scene::DrawVoxels() {
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
 
 	glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(sizeof(DrawElementsIndirectCommand) * param.mipLevel));
-}
-
-void Scene::Draw() {
-	if(options.drawTextures) DrawTextures();
-	else {
-		if(options.drawModels) DrawScene();
-		if(options.drawVoxels) DrawVoxels();
-	}
 }
 
 void Scene::PrintDrawIndCmd() {
@@ -511,7 +577,7 @@ void TW_CALL Scene::SetSceneCB(const void* value, void* clientData) {
 		obj->param.numMipLevels = (GLuint)log2(input.voxelRes);
 
 		obj->SetupDrawInd();
-		obj->SetupTextures();
+		obj->SetupVoxelTextures();
 		obj->UpdateBuffers();
 
 		obj->Voxelize();

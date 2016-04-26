@@ -37,7 +37,7 @@
     <Filter Include="Source Files\shaders\MipMap">
       <UniqueIdentifier>{09588730-3da6-4d84-9c0e-e5f34d06c136}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\shaders\Light Injection">
+    <Filter Include="Source Files\shaders\Shadow map">
       <UniqueIdentifier>{aac8b688-8702-4096-8562-e5b144ee427f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -107,10 +107,10 @@
       <Filter>Source Files\shaders\MipMap</Filter>
     </None>
     <None Include="src\shaders\shadowMap.frag">
-      <Filter>Source Files\shaders\Light Injection</Filter>
+      <Filter>Source Files\shaders\Shadow map</Filter>
     </None>
     <None Include="src\shaders\shadowMap.vert">
-      <Filter>Source Files\shaders\Light Injection</Filter>
+      <Filter>Source Files\shaders\Shadow map</Filter>
     </None>
     <None Include="src\shaders\drawModel.frag">
       <Filter>Source Files\shaders\Drawing</Filter>
@@ -137,6 +137,12 @@
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
     <None Include="src\shaders\drawTriangle.vert">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawData.frag">
+      <Filter>Source Files\shaders\Drawing</Filter>
+    </None>
+    <None Include="src\shaders\drawData.vert">
       <Filter>Source Files\shaders\Drawing</Filter>
     </None>
   </ItemGroup>

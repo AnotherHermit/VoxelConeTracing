@@ -275,6 +275,8 @@
     <ClInclude Include="src\Scene.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\shaders\drawData.frag" />
+    <None Include="src\shaders\drawData.vert" />
     <None Include="src\shaders\drawModel.frag" />
     <None Include="src\shaders\drawModel.vert" />
     <None Include="src\shaders\mipmap.comp" />
