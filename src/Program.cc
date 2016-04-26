@@ -200,7 +200,6 @@ bool Program::Init() {
 
 	// Set constants uniforms for calculating shadowmaps
 	glUseProgram(shaders.shadowMap);
-	//glUniform1i(SHADOW_UNIT, 5);
 	
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);

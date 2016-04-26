@@ -9,6 +9,7 @@
 
 in vec2 intTexCoords;
 in vec4 shadowCoord;
+in vec3 exNormal;
 
 flat in uint domInd;
 
@@ -17,7 +18,7 @@ layout(location = 1) uniform sampler2D diffuseUnit;
 
 layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
 layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
-layout(location = 6) uniform usampler2D shadowMap;
+layout(location = 6) uniform sampler2D shadowMap;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -126,10 +127,12 @@ void main()
 	vec3 lightCoord = shadowCoord.xyz / 2;
 	lightCoord += vec3(0.5f);
 
-	float shadowDepth = texture(shadowMap, lightCoord.xy).r / float(0xFFFF);
-	float bias = 2 / float(scene.voxelRes);
+	float shadowDepth = texture(shadowMap, lightCoord.xy).r;
+	float cosTheta = clamp(dot(normalize(exNormal), normalize(scene.lightDir)), 0.0f, 1.0f);
+	float bias = 0.005*tan(acos(cosTheta));
+	bias = clamp(bias, 0.0f, 0.01f);
 
-	if(shadowDepth > (1.0f - lightCoord.z) - bias) {
+	if(shadowDepth > lightCoord.z - bias) {
 		data.light = 0x8;
 	}
 
