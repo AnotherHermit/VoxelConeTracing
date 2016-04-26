@@ -188,6 +188,7 @@ bool Program::Init() {
 	glUniform1i(VOXEL_TEXTURE, 2);
 	glUniform1i(VOXEL_DATA, 3);
 	glUniform1i(SHADOW_UNIT, 5);
+	glUniform1i(SCENE_UNIT, 6);
 
 	// Set constant uniforms for drawing the voxel overlay
 	glUseProgram(shaders.voxel);

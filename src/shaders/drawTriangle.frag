@@ -13,6 +13,7 @@ out vec4 outColor;
 layout(location = 3) uniform usampler2DArray voxelTextures;
 layout(location = 4) uniform usampler3D voxelData;
 layout(location = 6) uniform sampler2D shadowMap;
+layout(location = 8) uniform sampler2DArray sceneTex;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -71,6 +72,11 @@ vec4 VoxelTexure() {
 layout(index = 2) subroutine(DrawTexture)
 vec4 ShadowTexture() {
 	return texture(shadowMap, exTexCoords);
+}
+
+layout(index = 3) subroutine(DrawTexture)
+vec4 SceneTexture() {
+	return texture(sceneTex, vec3(exTexCoords, 0.0f));
 }
 
 layout(location = 0) subroutine uniform DrawTexture SampleTexture;

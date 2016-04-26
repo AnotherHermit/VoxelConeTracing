@@ -104,6 +104,7 @@ private:
 	GLuint voxel2DTex;
 	GLuint voxelTex;
 	GLuint shadowTex;
+	GLuint sceneTex;
 
 	// Scene information
 	glm::vec3 *maxVertex, *minVertex, centerVertex;

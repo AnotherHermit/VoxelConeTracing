@@ -105,7 +105,7 @@ bool Scene::InitAntBar() {
 		resTwType = new TwType;
 		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=2 " };
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=3 " };
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
@@ -243,7 +243,13 @@ void Scene::SetupTextures() {
 
 void Scene::SetupShadowTexture() {
 
-
+	glGenTextures(1, &sceneTex);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, options.shadowRes, options.shadowRes, 1);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -258,10 +264,13 @@ void Scene::SetupShadowTexture() {
 	glGenFramebuffers(1, &shadowFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 
-
+	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, sceneTex, 0, 0);
+	//glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, sceneTex, 0, 1);
+	//glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, sceneTex, 0, 2);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex, 0);
 
-	glDrawBuffer(GL_NONE);
+	GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 }; // , GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glDrawBuffers(1, DrawBuffers);
 	glReadBuffer(GL_NONE);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -420,6 +429,8 @@ void Scene::DrawTextures() {
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, sceneTex);
 
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &param.voxelDraw);
 
