@@ -16,8 +16,8 @@ flat in uint domInd;
 layout(location = 0) uniform vec3 diffColor;
 layout(location = 1) uniform sampler2D diffuseUnit;
 
-layout(location = 3) uniform layout(R32UI) uimage2DArray voxelTextures;
-layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
+layout(location = 3) uniform layout(r32ui) uimage2DArray voxelTextures;
+layout(location = 4) uniform layout(r32ui) uimage3D voxelData;
 layout(location = 6) uniform sampler2D shadowMap;
 
 struct SceneParams {
@@ -69,13 +69,13 @@ struct VoxelData {
 	uint count;
 };
 
-uint packARGB8(VoxelData input) {
+uint packARGB8(VoxelData dataIn) {
 	uint result = 0;
 
-	uvec3 uiColor = uvec3(input.color.rgb * 31.0f * float(input.count));
+	uvec3 uiColor = uvec3(dataIn.color.rgb * 31.0f * float(dataIn.count));
 
-	result |= (input.light & 0x0F) << 28;
-	result |= (input.count & 0x0F) << 24;
+	result |= (dataIn.light & 0x0F) << 28;
+	result |= (dataIn.count & 0x0F) << 24;
 	result |= (uiColor.r & 0xFF) << 16;
 	result |= (uiColor.g & 0xFF) << 8;
 	result |= (uiColor.b & 0xFF);
@@ -83,12 +83,12 @@ uint packARGB8(VoxelData input) {
 	return result;
 }
 
-uint packRG11B10(uvec3 input) {
+uint packRG11B10(uvec3 dataIn) {
 	uint result = 0;
 
-	result |= (input.r & 0x7FF) << 21;
-	result |= (input.g & 0x7FF) << 10;
-	result |= (input.b & 0x3FF);
+	result |= (dataIn.r & 0x7FF) << 21;
+	result |= (dataIn.g & 0x7FF) << 10;
+	result |= (dataIn.b & 0x3FF);
 
 	return result;
 }

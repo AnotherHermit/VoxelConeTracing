@@ -11,8 +11,8 @@ layout(local_size_x = 64) in;
 
 layout(location = 7) uniform uint currentLevel;
 
-layout(location = 4) uniform layout(R32UI) uimage3D voxelData;
-layout(location = 5) uniform layout(R32UI) uimage3D voxelDataNextLevel;
+layout(location = 4) uniform layout(r32ui) uimage3D voxelData;
+layout(location = 5) uniform layout(r32ui) uimage3D voxelDataNextLevel;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -63,16 +63,16 @@ struct VoxelData {
 	uint count;
 };
 
-VoxelData unpackARGB8(uint input) {
+VoxelData unpackARGB8(uint bytesIn) {
 	VoxelData data;
 	uvec3 uiColor;
 
 	// Put a first to improve max operation but it should not be very noticable
-	data.light = (input & 0xF0000000) >> 28;
-	data.count = (input & 0x0F000000) >> 24;
-	uiColor.r =  (input & 0x00FF0000) >> 16;
-	uiColor.g =  (input & 0x0000FF00) >> 8;
-	uiColor.b =  (input & 0x000000FF);
+	data.light = (bytesIn & 0xF0000000) >> 28;
+	data.count = (bytesIn & 0x0F000000) >> 24;
+	uiColor.r =  (bytesIn & 0x00FF0000) >> 16;
+	uiColor.g =  (bytesIn & 0x0000FF00) >> 8;
+	uiColor.b =  (bytesIn & 0x000000FF);
 
 	data.color.rgb = vec3(uiColor) / float(data.count) / 31.0f;
 	data.color.a = 1.0f;
@@ -80,13 +80,13 @@ VoxelData unpackARGB8(uint input) {
 	return data;
 }
 
-uint packARGB8(VoxelData input) {
+uint packARGB8(VoxelData dataIn) {
 	uint result = 0;
 
-	uvec3 uiColor = uvec3(input.color.rgb * 31.0f * float(input.count));
+	uvec3 uiColor = uvec3(dataIn.color.rgb * 31.0f * float(dataIn.count));
 
-	result |= (input.light & 0xF) << 28;
-	result |= (input.count & 0xF) << 24;
+	result |= (dataIn.light & 0xF) << 28;
+	result |= (dataIn.count & 0xF) << 24;
 	result |= (uiColor.r & 0xFF) << 16;
 	result |= (uiColor.g & 0xFF) << 8;
 	result |= (uiColor.b & 0xFF);
@@ -94,22 +94,22 @@ uint packARGB8(VoxelData input) {
 	return result;
 }
 
-uint packRG11B10(uvec3 input) {
+uint packRG11B10(uvec3 dataIn) {
 	uint result = 0;
 
-	result |= (input.r & 0x7FF) << 21;
-	result |= (input.g & 0x7FF) << 10;
-	result |= (input.b & 0x3FF);
+	result |= (dataIn.r & 0x7FF) << 21;
+	result |= (dataIn.g & 0x7FF) << 10;
+	result |= (dataIn.b & 0x3FF);
 
 	return result;
 }
 
-uvec3 unpackRG11B10(uint input) {
+uvec3 unpackRG11B10(uint bytesIn) {
 	uvec3 outVec;
 
-	outVec.r = (input & 0xFFE00000) >> 21;
-	outVec.g = (input & 0x001FFC00) >> 10;
-	outVec.b = (input & 0x000003FF);
+	outVec.r = (bytesIn & 0xFFE00000) >> 21;
+	outVec.g = (bytesIn & 0x001FFC00) >> 10;
+	outVec.b = (bytesIn & 0x000003FF);
 
 	return outVec;
 }

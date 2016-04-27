@@ -217,9 +217,9 @@ bool Program::Init() {
 	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
 	scenes.push_back(cornell);
 	
-	//Scene* sponza = new Scene();
-	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	//scenes.push_back(sponza);
+	Scene* sponza = new Scene();
+	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
 	cornell->CreateShadow();
@@ -227,10 +227,10 @@ bool Program::Init() {
 	cornell->Voxelize();
 	cornell->MipMap();
 
-	//sponza->CreateShadow();
-	//sponza->RenderData();
-	//sponza->Voxelize();
-	//sponza->MipMap();
+	sponza->CreateShadow();
+	sponza->RenderData();
+	sponza->Voxelize();
+	sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");

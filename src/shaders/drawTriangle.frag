@@ -39,16 +39,16 @@ struct VoxelData {
 	uint count;
 };
 
-VoxelData unpackARGB8(uint input) {
+VoxelData unpackARGB8(uint bytesIn) {
 	VoxelData data;
 	uvec3 uiColor;
 
 	// Put a first to improve max operation but it should not be very noticable
-	data.light = (input & 0xF0000000) >> 28;
-	data.count = (input & 0x0F000000) >> 24;
-	uiColor.r =  (input & 0x00FF0000) >> 16;
-	uiColor.g =  (input & 0x0000FF00) >> 8;
-	uiColor.b =  (input & 0x000000FF);
+	data.light = (bytesIn & 0xF0000000) >> 28;
+	data.count = (bytesIn & 0x0F000000) >> 24;
+	uiColor.r =  (bytesIn & 0x00FF0000) >> 16;
+	uiColor.g =  (bytesIn & 0x0000FF00) >> 8;
+	uiColor.b =  (bytesIn & 0x000000FF);
 
 	data.color.rgb = vec3(uiColor) / float(data.count) / 31.0f;
 	data.color.a = 1.0f;
@@ -87,7 +87,10 @@ vec4 ScenePosition() {
 
 layout(index = 5) subroutine(DrawTexture)
 vec4 SceneNormal() {
-	return texture(sceneTex, vec3(exTexCoords, 2.0f));
+	vec4 normal = texture(sceneTex, vec3(exTexCoords, 2.0f));
+	normal.xyz /= 2;
+	normal.xyz += vec3(0.5f);
+	return normal;
 }
 
 layout(index = 6) subroutine(DrawTexture)

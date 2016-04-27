@@ -25,15 +25,35 @@ layout (std140, binding = 0) uniform CameraBuffer {
 	Camera cam;
 };
 
+struct SceneParams {
+	mat4 MTOmatrix[3];
+	mat4 MTWmatrix;
+	mat4 MTShadowMatrix;
+	vec3 lightDir;
+	uint voxelDraw;
+	uint view;
+	uint voxelRes;
+	uint voxelLayer;
+	uint numMipLevels;
+	uint mipLevel;
+};
+
+layout (std140, binding = 1) uniform SceneBuffer {
+	SceneParams scene;
+};
+
 void main(void)
 {
 	exNormal = /*mat3(cam.WTVmatrix) */ inNormal;
 		
-	vec4 temp = cam.WTVmatrix * vec4(inPosition, 1.0f);
+	vec4 temp = scene.MTOmatrix[2] * vec4(inPosition, 1.0f);
 	
-	exPosition = vec4(inPosition, 1.0f);
+	temp.xyz /= 2;
+	temp.xyz += vec3(0.5f);
+
+	exPosition = temp;
 	
-	gl_Position = cam.VTPmatrix * temp;
+	gl_Position = cam.VTPmatrix * cam.WTVmatrix * vec4(inPosition, 1.0f);
 
 	exTexCoords = inTexCoords;
 }
