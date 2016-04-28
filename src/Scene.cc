@@ -113,7 +113,7 @@ bool Scene::InitAntBar() {
 		resTwType = new TwType;
 		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=6 " };
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=7 " };
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
