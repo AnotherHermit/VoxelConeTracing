@@ -144,7 +144,7 @@ vec4 voxelSampleLevel(vec3 position, float level) {
 		vec3 voxelPos = (positionWhole + offsets[i]) / scale;
 		VoxelData voxel = unpackARGB8(textureLod(voxelData, voxelPos, mip).r);
 		vec3 temp = (1.0f - offsets[i]) * (1.0f - intpol) + offsets[i] * intpol; 
-		total.color += voxel.color * temp.x * temp.y * temp.z;
+		total.color += voxel.color * temp.x * temp.y * temp.z * float(sign(voxel.light));
 		count += float(voxel.light) * float(sign(voxel.count)) * temp.x * temp.y * temp.z;
 	}
 
@@ -180,7 +180,7 @@ vec4 ConeTrace(vec3 startPos, vec3 dir, float coneRatio, float maxDist,	float vo
 		sampleValue = voxelSampleBetween(samplePos, sampleLOD);
 		sampleWeight = 1.0f - accum.a;
 		accum += sampleValue * sampleWeight;
-		dist += sampleDiameter;
+		dist += sampleRadius;
 	}
 
 	return accum;
@@ -268,9 +268,17 @@ vec4 DiffuseBounce() {
 
 layout(index = 11) subroutine(DrawTexture)
 vec4 SoftShadows() {
-	vec4 result = AngleTrace(scene.lightDir, 10.0f); 
+	vec4 result = AngleTrace(scene.lightDir, 5.0f); 
 	vec4 color = SceneColor();
 	return vec4(color.rgb * (1.0f - result.a), 1.0f);
+}
+
+layout(index = 12) subroutine(DrawTexture)
+vec4 Combination() {
+	vec4 diffuse = DiffuseTrace();
+	vec4 shadows = AngleTrace(scene.lightDir, 5.0f);
+	vec4 color = SceneColor();
+	return vec4((color.rgb * 0.9f + diffuse.rgb * 0.4f) * (1.0f - shadows.a) + diffuse.rgb * shadows.a * diffuse.a * 0.6f , 1.0f);
 }
 
 layout(location = 0) subroutine uniform DrawTexture SampleTexture;
