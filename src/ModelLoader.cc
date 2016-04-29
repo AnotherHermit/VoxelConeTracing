@@ -16,6 +16,8 @@
 
 #include "GL_utilities.h"
 
+#include "glm\gtc\constants.hpp"
+
 #include <iostream>
 
 bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex) {
@@ -41,7 +43,9 @@ bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
 	// Load standard vertex data needed by all models, also creates VAO
 	outModel->SetStandardData(shapes[0].mesh.positions.size(), shapes[0].mesh.positions.data(),
 							  shapes[0].mesh.normals.size(), shapes[0].mesh.normals.data(),
-							  shapes[0].mesh.indices.size(), shapes[0].mesh.indices.data());
+							  shapes[0].mesh.indices.size(), shapes[0].mesh.indices.data(),
+							  shapes[0].mesh.tangents.size(), shapes[0].mesh.tangents.data(),
+							  shapes[0].mesh.bitangents.size(), shapes[0].mesh.bitangents.data());
 
 	return true;
 }
@@ -58,6 +62,8 @@ bool ModelLoader::LoadModels(const char* path) {
 		std::cerr << err << std::endl;
 		return false;
 	}
+
+	CalculateTangents();
 
 	return true;
 }
@@ -171,7 +177,9 @@ bool ModelLoader::AddModels(std::vector<Model*>* models, ShaderList* shaders) {
 		// Load standard vertex data needed by all models, also creates VAO
 		model->SetStandardData(shape->mesh.positions.size(), shape->mesh.positions.data(),
 							   shape->mesh.normals.size(), shape->mesh.normals.data(),
-							   shape->mesh.indices.size(), shape->mesh.indices.data());
+							   shape->mesh.indices.size(), shape->mesh.indices.data(),
+							   shape->mesh.tangents.size(), shape->mesh.tangents.data(),
+							   shape->mesh.bitangents.size(), shape->mesh.bitangents.data());
 
 		// Set material
 		if(shape->mesh.material_ids[0] != -1) {
@@ -220,4 +228,30 @@ bool ModelLoader::CalculateMinMax(glm::vec3** maxVertex, glm::vec3** minVertex) 
 		}
 	}
 	return true;
+}
+
+void ModelLoader::CalculateTangents() {
+	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
+
+		// Check vertex data for min and max corners
+		for(auto normal = shape->mesh.normals.begin(); normal!= shape->mesh.normals.end() - 3; normal += 3) {
+			glm::vec3 currentNormal = glm::normalize(glm::vec3(normal[0], normal[1], normal[2]));
+
+			float a = normal[0];
+			float b = normal[1];
+			float c = normal[2];
+
+			glm::vec3 tangCand[] = { glm::vec3(-b - c,a,a), glm::vec3(c,c, -a - b) };
+			int tangSelect = int((c > glm::epsilon<float>()) && (-a - b > glm::epsilon<float>()));
+			glm::vec3 tangent = glm::normalize(tangCand[tangSelect]);
+			glm::vec3 bitangent = normalize(cross(currentNormal, tangent));
+
+			shape->mesh.tangents.push_back(tangent.x);
+			shape->mesh.tangents.push_back(tangent.y);
+			shape->mesh.tangents.push_back(tangent.z);
+			shape->mesh.bitangents.push_back(bitangent.x);
+			shape->mesh.bitangents.push_back(bitangent.y);
+			shape->mesh.bitangents.push_back(bitangent.z);
+		}
+	}
 }

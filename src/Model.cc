@@ -31,7 +31,9 @@ void Model::SetMaterial(TextureData* textureData) {
 
 void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 							size_t numNormals, GLfloat* normalData,
-							size_t numIndices, GLuint* indexData) {
+							size_t numIndices, GLuint* indexData,
+							size_t numTangents, GLfloat* tangentData,
+							size_t numBiTangents, GLfloat* biTangentData) {
 
 	nIndices = numIndices;
 	// Create buffers
@@ -39,32 +41,44 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 		glGenVertexArrays(1, &vao);
 	}
 
-	glGenBuffers(1, &vertexbufferID);
-	glGenBuffers(1, &normalbufferID);
-	glGenBuffers(1, &indexbufferID);
+	glGenBuffers(5, meshBuffers);
 
 	// Allocate enough memory for instanced drawing buffers
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numVertices, verticeData, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numNormals, normalData, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[2]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numTangents, tangentData, GL_STATIC_DRAW);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[3]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numBiTangents, biTangentData, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers[4]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * numIndices, indexData, GL_STATIC_DRAW);
 
 	// Set the GPU pointers for drawing 
 	glBindVertexArray(vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[0]);
 	glEnableVertexAttribArray(VERT_POS);
 	glVertexAttribPointer(VERT_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, normalbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[1]);
 	glEnableVertexAttribArray(VERT_NORMAL);
 	glVertexAttribPointer(VERT_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[2]);
+	glEnableVertexAttribArray(VERT_TANGENT);
+	glVertexAttribPointer(VERT_TANGENT, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, meshBuffers[3]);
+	glEnableVertexAttribArray(VERT_BITANGENT);
+	glVertexAttribPointer(VERT_BITANGENT, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers[4]);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

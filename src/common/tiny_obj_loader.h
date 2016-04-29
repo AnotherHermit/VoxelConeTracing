@@ -71,6 +71,8 @@ typedef struct {
 typedef struct {
   std::vector<float> positions;
   std::vector<float> normals;
+  std::vector<float> tangents;
+  std::vector<float> bitangents;
   std::vector<float> texcoords;
   std::vector<unsigned int> indices;
   std::vector<int> material_ids; // per-mesh material ID

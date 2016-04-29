@@ -43,8 +43,10 @@ public:
 	Model();
 
 	void SetStandardData(size_t numVertices, GLfloat* verticeData,
-			  size_t numNormals, GLfloat* normalData,
-			  size_t numIndices, GLuint* indexData);
+						 size_t numNormals, GLfloat* normalData,
+						 size_t numIndices, GLuint* indexData,
+						 size_t numTangents, GLfloat* tangentData,
+						 size_t numBiTangents, GLfloat* biTangentData);
 
 	void SetMaterial(TextureData* textureData);
 	void SetTextureData(size_t numTexCoords, GLfloat* texCoordData);
@@ -67,9 +69,7 @@ public:
 
 private:
 	GLuint vao;
-	GLuint vertexbufferID;
-	GLuint normalbufferID;
-	GLuint indexbufferID;
+	GLuint meshBuffers[5];
 	size_t nIndices;
 
 	// Only used by textured models

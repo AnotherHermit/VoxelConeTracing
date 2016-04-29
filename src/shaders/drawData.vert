@@ -10,10 +10,14 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoords;
+layout(location = 4) in vec3 inTangent;
+layout(location = 5) in vec3 inBiTangent;
 
 out vec3 exNormal;
 out vec4 exPosition;
 out vec2 exTexCoords;
+out vec3 exTangent;
+out vec3 exBiTangent;
 
 struct Camera {
 	mat4 WTVmatrix;
@@ -44,7 +48,9 @@ layout (std140, binding = 1) uniform SceneBuffer {
 
 void main(void)
 {
-	exNormal = /*mat3(cam.WTVmatrix) */ inNormal;
+	exNormal = inNormal;
+	exTangent = inTangent;
+	exBiTangent = inBiTangent;
 		
 	vec4 temp = scene.MTOmatrix[2] * vec4(inPosition, 1.0f);
 	

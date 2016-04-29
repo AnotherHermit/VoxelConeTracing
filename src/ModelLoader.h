@@ -31,6 +31,7 @@ private:
 	bool LoadModels(const char* path);
 	bool LoadTextures();
 
+	void CalculateTangents();
 
 public:
 	ModelLoader() {};
