@@ -60,7 +60,6 @@ public:
 	void Draw();
 	void Voxelize();
 	void ShadowMap();
-	void SetVoxelDraw(bool enable);
 	GLuint GetVAO() { return vao; }
 	GLuint GetDiffuseID() { return diffuseID; }
 	GLuint GetMaskID() { return maskID; }

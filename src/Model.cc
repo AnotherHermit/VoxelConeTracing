@@ -57,7 +57,7 @@ void Model::SetStandardData(size_t numVertices, GLfloat* verticeData,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numBiTangents, biTangentData, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers[4]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLfloat) * numIndices, indexData, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * numIndices, indexData, GL_STATIC_DRAW);
 
 	// Set the GPU pointers for drawing 
 	glBindVertexArray(vao);
