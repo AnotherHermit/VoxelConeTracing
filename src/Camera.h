@@ -41,11 +41,10 @@ struct CameraParam {
 };
 
 class Camera {
-private:
+protected:
 	glm::vec3 lookp, yvec;
-	glm::vec3 heading, side, up;
-	GLfloat mspeed, rspeed, phi, theta;
-	GLfloat frustumFar;
+	glm::vec3 startPos;
+	GLfloat frustumFar, fov, rspeed;
 
 	bool isPaused;
 	bool needUpdate;
@@ -58,30 +57,83 @@ private:
 	TwStructMember cameraTwMembers[3];
 	TwType cameraTwStruct;
 
-	void Update();
+	virtual void UpdateParams(GLfloat deltaT) = 0;
+
 	void UploadParams();
 
 public:
-	Camera(glm::vec3 startpos, GLint *screenWidth, GLint *screenHeight, GLfloat farInit);
-	bool Init();
+	Camera();
 
-	void SetFrustum();
-	void ResetCamera(glm::vec3 pos);
+	bool Init(GLfloat fovInit, GLint *screenWidth, GLint	*screenHeight, GLfloat farInit);
 
-	void MoveForward(GLfloat deltaT);
-	void MoveRight(GLfloat deltaT);
-	void MoveUp(GLfloat deltaT);
-	void RotateCamera(GLint dx, GLint dy);
+	virtual void Reset();
 
-	void UpdateCamera();
+	void Resize();
+
+	void Update(GLfloat deltaT = 1.0f);
 
 	void TogglePause() { isPaused = !isPaused; }
 
-	GLfloat* GetSpeedPtr() { return &mspeed; }
 	GLfloat* GetRotSpeedPtr() { return &rspeed; }
 
 	TwType GetCameraTwType() { return cameraTwStruct; }
 	CameraParam* GetCameraInfo() { return &param; }
+};
+
+class FPCamera : public Camera {
+private:
+	glm::vec3 forward, right, up, moveVec;
+	GLfloat mspeed, phi, theta;
+
+	virtual void UpdateParams(GLfloat deltaT);
+
+public:
+	FPCamera();
+
+	bool Init(glm::vec3 startpos, GLfloat fovInit, GLint *screenWidth, GLint *screenHeight, GLfloat farInit);
+
+	void Move(glm::vec3 vec);
+
+	void MoveForward();
+
+	void MoveBackward();
+
+	void MoveRight();
+
+	void MoveLeft();
+
+	void MoveUp();
+
+	void MoveDown();
+
+	void Rotate(GLint dx, GLint dy);
+
+	void Rotate(GLfloat dx, GLfloat dy);
+
+	virtual void Reset();
+
+	GLfloat *GetSpeedPtr() { return &mspeed; }
+};
+
+class OrbitCamera : public Camera {
+private:
+	glm::vec3 target, startTarget;
+	GLfloat distance, polar, azimuth;
+
+	virtual void UpdateParams(GLfloat deltaT);
+
+public:
+	OrbitCamera();
+
+	virtual bool Init(glm::vec3 initTarget, GLfloat initDistance, GLfloat initPolar, GLfloat initAzimuth, GLfloat fovInit, GLint *screenWidth, GLint *screenHeight, GLfloat farInit);
+
+	virtual void Reset();
+
+	void Rotate(GLint dx, GLint dy);
+
+	void Rotate(GLfloat dx, GLfloat dy);
+
+	void Zoom(GLfloat factor);
 };
 
 #endif // CAMERA_H

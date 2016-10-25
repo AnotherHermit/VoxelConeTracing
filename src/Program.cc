@@ -32,6 +32,7 @@ Program::Program() {
 	// Set program parameters
 	cameraStartPos = glm::vec3(0.0, 0.0, 2.0);
 	cameraFrustumFar = 5000.0f;
+	cameraFovStart = 60.0f;
 
 	sceneSelect = 0;
 	useOrtho = false;
@@ -209,8 +210,8 @@ bool Program::Init() {
 	TwDefine(" VCT help='This program simulates Global Illumination with Voxel Cone Tracing.' ");
 
 	// Set up the camera
-	cam = new Camera(cameraStartPos, &winWidth, &winHeight, cameraFrustumFar);
-	if(!cam->Init()) return false;
+	cam = new FPCamera();
+	if(!cam->Init(cameraStartPos, cameraFovStart, &winWidth, &winHeight, cameraFrustumFar)) return false;
 
 	// Load scenes
 	//Scene* cornell = new Scene();
@@ -261,7 +262,7 @@ void Program::Update() {
 	UploadParams();
 
 	// Update the camera
-	cam->UpdateCamera();
+	cam->Update(param.deltaT);
 }
 
 void Program::Render() {
@@ -326,7 +327,7 @@ void Program::OnEvent(SDL_Event *Event) {
 					SDL_GetWindowSize(screen, &winWidth, &winHeight);
 					glViewport(0, 0, winWidth, winHeight);
 					TwWindowSize(winWidth, winHeight);
-					cam->SetFrustum();
+					cam->Resize();
 					GetCurrentScene()->SetupSceneTextures();
 					break;
 			}
@@ -377,27 +378,27 @@ void Program::OnMouseMove(SDL_Event *Event) {
 	if(!SDL_GetRelativeMouseMode())
 		TwMouseMotion(Event->motion.x, Event->motion.y);
 	else
-		cam->RotateCamera(Event->motion.xrel, Event->motion.yrel);
+		cam->Rotate(Event->motion.xrel, Event->motion.yrel);
 }
 
 void Program::CheckKeyDowns() {
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 	if(keystate[SDL_SCANCODE_W]) {
-		cam->MoveForward(param.deltaT);
+		cam->MoveForward();
 	}
 	if(keystate[SDL_SCANCODE_S]) {
-		cam->MoveForward(-param.deltaT);
+		cam->MoveBackward();
 	}
 	if(keystate[SDL_SCANCODE_A]) {
-		cam->MoveRight(-param.deltaT);
+		cam->MoveLeft();
 	}
 	if(keystate[SDL_SCANCODE_D]) {
-		cam->MoveRight(param.deltaT);
+		cam->MoveRight();
 	}
 	if(keystate[SDL_SCANCODE_Q]) {
-		cam->MoveUp(param.deltaT);
+		cam->MoveUp();
 	}
 	if(keystate[SDL_SCANCODE_E]) {
-		cam->MoveUp(-param.deltaT);
+		cam->MoveDown();
 	}
 }

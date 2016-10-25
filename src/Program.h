@@ -54,7 +54,7 @@ private:
 
 	bool useOrtho;
 	bool drawVoxelOverlay;
-	Camera* cam;
+	FPCamera* cam;
 	TwBar* antBar;
 
 	// Shaders
@@ -68,6 +68,7 @@ private:
 	// Program params
 	glm::vec3 cameraStartPos;
 	GLfloat cameraFrustumFar;
+	GLfloat cameraFovStart;
 
 	// Methods
 	void UploadParams();
