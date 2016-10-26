@@ -161,6 +161,7 @@ public:
 
 	// AntTweakBar
 	float* GetLightDir() { return glm::value_ptr(param.lightDir); }
+	SceneParam *GetSceneParam() { return &param; }
 	static TwType GetSceneTwType() { return *sceneTwStruct; }
 	static TwType GetSceneOptionTwType() { return *sceneOptionsTwStruct; }
 	static TwType GetDrawIndTwType() { return *drawIndTwStruct; }

@@ -20,8 +20,8 @@ Program::Program() {
 	cam = NULL;
 
 	// Window init size
-	winWidth = 800;
-	winHeight = 800;
+	winWidth = 400;
+	winHeight = 400;
 
 	// Start state
 	isRunning = true;
@@ -41,7 +41,7 @@ Program::Program() {
 	useOrtho = false;
 	drawVoxelOverlay = false;
 
-	takeTime = 0;
+	takeTime = 1;
 	runNumber = 0;
 	runScene = 0;
 	sceneAverage[0] = 0.0f;
@@ -49,12 +49,6 @@ Program::Program() {
 	sceneAverage[2] = 0.0f;
 	sceneAverage[3] = 0.0f;
 	sceneAverage[4] = 0.0f;
-	sceneStatic[0] = 0.0f;
-	sceneStatic[1] = 0.0f;
-
-	takeFrameTime = 0;
-	frame = 0;
-	frameAverage = 0.0f;
 }
 
 int Program::Execute() {
@@ -189,36 +183,6 @@ bool Program::Init() {
 
 	// Create shadowmap
 	shaders.shadowMap = loadShaders("src/shaders/shadowMap.vert", "src/shaders/shadowMap.frag");
-	
-	// TODO: Make this a separate function
-	// Set constant uniforms for the drawing programs
-	glUseProgram(shaders.drawScene);
-	glUniform1i(DIFF_UNIT, 0);
-	glUniform1i(MASK_UNIT, 1);
-
-	// Set constant uniforms for voxel programs
-	glUseProgram(shaders.voxelize);
-	glUniform1i(DIFF_UNIT, 0);
-	glUniform1i(VOXEL_TEXTURE, 2);
-	glUniform1i(VOXEL_DATA, 3);
-	glUniform1i(SHADOW_UNIT, 5);
-
-	// Set constant uniforms for simple triangle drawing
-	glUseProgram(shaders.singleTriangle);
-	glUniform1i(VOXEL_TEXTURE, 2);
-	glUniform1i(VOXEL_DATA, 3);
-	glUniform1i(SHADOW_UNIT, 5);
-	glUniform1i(SCENE_UNIT, 6);
-	glUniform1i(SCENE_DEPTH, 7);
-
-	// Set constant uniforms for drawing the voxel overlay
-	glUseProgram(shaders.voxel);
-	glUniform1i(VOXEL_DATA, 3);
-
-	// Set constant uniforms for calculating mipmaps
-	glUseProgram(shaders.mipmap);
-	glUniform1i(VOXEL_DATA, 3);
-	glUniform1i(VOXEL_DATA_NEXT, 4);
 		
 	// Set up the AntBar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -272,12 +236,19 @@ bool Program::Init() {
 	// Check if AntTweak Setup is ok
 	if(TwGetLastError() != NULL) return false;
 
+	if(takeTime) {
+		printf("Time per step logging\n");
+		printf("Scene\t  CSA  \t  RDA  \t  V    \t  M    \t  DA\n");
+	}
+
 	return true;
 }
 
 void Program::Update() {
 	// Upload program params (incl time update)
 	UploadParams();
+
+	GetCurrentScene()->UpdateBuffers();
 
 	// Update the camera
 	cam->Update(param.deltaT);
@@ -286,15 +257,88 @@ void Program::Update() {
 void Program::Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.startTimer();
+	}
+
 	GetCurrentScene()->CreateShadow();
+
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.endTimer();
+		sceneAverage[0] += timer.getTimeMS() / 5.0f;
+
+		timer.startTimer();
+	}
+
 	GetCurrentScene()->RenderData();
+
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.endTimer();
+		sceneAverage[1] += timer.getTimeMS() / 5.0f;
+
+		timer.startTimer();
+	}
+
 	GetCurrentScene()->Voxelize();
+
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.endTimer();
+		sceneAverage[2] += timer.getTimeMS() / 5.0f;
+
+		timer.startTimer();
+	}
+
 	GetCurrentScene()->MipMap();
+
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.endTimer();
+		sceneAverage[3] += timer.getTimeMS() / 5.0f;
+
+		timer.startTimer();
+	}
+
 	GetCurrentScene()->Draw();
+
+	if(runNumber < 5 && takeTime) {
+		glFinish();
+		timer.endTimer();
+		sceneAverage[4] += timer.getTimeMS() / 5.0f;
+		runNumber++;
+	}
+
+	if(runNumber == 5 && takeTime) {
+		printf("%4d \t%7.3f\t%7.3f\t%7.3f\t%7.3f\t%7.3f\n", runScene + 1, runScene > 0 ? sceneAverage[0] : 0.0f, sceneAverage[1], runScene > 1 ? sceneAverage[2] : 0.0f, runScene > 1 ? sceneAverage[3] : 0.0f, sceneAverage[4]);
+		ToggleProgram();
+	}
 
 	TwDraw();
 
 	SDL_GL_SwapWindow(screen);
+}
+
+void Program::ToggleProgram() {
+	runScene = GetCurrentScene()->GetSceneParam()->voxelDraw;
+	runScene++;
+	runScene %= 5;
+	GetCurrentScene()->GetSceneParam()->voxelDraw = runScene;
+	runNumber = 0;
+	sceneAverage[0] = 0.0f;
+	sceneAverage[1] = 0.0f;
+	sceneAverage[2] = 0.0f;
+	sceneAverage[3] = 0.0f;
+	sceneAverage[4] = 0.0f;
+	if(runScene == 0 && takeTime) {
+		takeTime++;
+	}
+
+	if(takeTime > 3) {
+		takeTime = 0;
+	}
 }
 
 void Program::Clean() {

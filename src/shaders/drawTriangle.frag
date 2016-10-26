@@ -328,7 +328,7 @@ vec4 Basic() {
     c.xyz += 0.5f * l.y; // Diffuse
     c.xyz += 0.2f * l.z; // Speclar
 
-    return vec4(n, 1.0f);
+    return c;
 
 }
 
@@ -415,7 +415,7 @@ vec4 GIAOSoftShadows() {
     float m = 1.0f;
     vec4 c = SceneColor();
     vec3 l = BasicLight(p, n);
-    float s = 1.0f - AngleTrace(scene.lightDir, 2.5f).a;
+    float s = 1.0f - AngleTrace(scene.lightDir, 5.0f).a;
     vec4 d = DiffuseTrace(p, n, t, b, m);
 
     c.xyz += 0.5f * d.xyz;

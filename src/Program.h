@@ -51,11 +51,8 @@ private:
 	GLint takeFrameTime, frame;
 	GLuint runScene;
 	GLfloat sceneAverage[5];
-	GLfloat sceneStatic[2];
-	GLfloat frameAverage;
-	GLuint sceneNum;
 
-	Timer time;
+	Timer time, timer;
 	GLfloat FPS;
 	ProgramStruct param;
 	GLuint programBuffer;
@@ -109,6 +106,7 @@ public:
 
 	void Clean();
 
+	void ToggleProgram();
 };
 
 #endif // PROGRAM_H

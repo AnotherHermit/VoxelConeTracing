@@ -26,8 +26,8 @@ TwType* Scene::compIndTwStruct = nullptr;
 
 Scene::Scene() {
 	options.skipNoTexture = false;
-	options.drawTextures = false;
-	options.drawModels = true;
+	options.drawTextures = true;
+	options.drawModels = false;
 	options.drawVoxels = false;
 	options.shadowRes = 512;
 
