@@ -30,13 +30,31 @@ Program::Program() {
 	time.startTimer();
 
 	// Set program parameters
-	cameraStartPos = glm::vec3(0.0, 0.0, 2.0);
+	cameraStartDistance = 2.9f;
+	cameraStartAzimuth = (GLfloat)M_PI / 2.0f;//(GLfloat)M_PI / 2.0f; (GLfloat)M_PI / 4.0f;
+	cameraStartPolar = (GLfloat)M_PI / 2.3f;//(GLfloat) M_PI / 2.3f; (GLfloat) M_PI / 1.8f;
+	cameraStartTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+	cameraStartFov = 60.0f;
 	cameraFrustumFar = 5000.0f;
-	cameraFovStart = 60.0f;
 
 	sceneSelect = 0;
 	useOrtho = false;
 	drawVoxelOverlay = false;
+
+	takeTime = 0;
+	runNumber = 0;
+	runScene = 0;
+	sceneAverage[0] = 0.0f;
+	sceneAverage[1] = 0.0f;
+	sceneAverage[2] = 0.0f;
+	sceneAverage[3] = 0.0f;
+	sceneAverage[4] = 0.0f;
+	sceneStatic[0] = 0.0f;
+	sceneStatic[1] = 0.0f;
+
+	takeFrameTime = 0;
+	frame = 0;
+	frameAverage = 0.0f;
 }
 
 int Program::Execute() {
@@ -143,7 +161,7 @@ bool Program::Init() {
 	glEnable(GL_TEXTURE_3D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	dumpInfo();
 
@@ -210,33 +228,33 @@ bool Program::Init() {
 	TwDefine(" VCT help='This program simulates Global Illumination with Voxel Cone Tracing.' ");
 
 	// Set up the camera
-	cam = new FPCamera();
-	if(!cam->Init(cameraStartPos, cameraFovStart, &winWidth, &winHeight, cameraFrustumFar)) return false;
+	cam = new OrbitCamera();
+	if(!cam->Init(cameraStartTarget,cameraStartDistance,cameraStartPolar, cameraStartAzimuth, cameraStartFov, &winWidth, &winHeight, cameraFrustumFar)) return false;
 
 	// Load scenes
-	//Scene* cornell = new Scene();
-	//if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
-	//scenes.push_back(cornell);
+	Scene* cornell = new Scene();
+	if(!cornell->Init("resources/cornell.obj", &shaders)) return false;
+	scenes.push_back(cornell);
 	
-	Scene* sponza = new Scene();
-	if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
-	scenes.push_back(sponza);
+	//Scene* sponza = new Scene();
+	//if(!sponza->Init("resources/sponza.obj", &shaders)) return false;
+	//scenes.push_back(sponza);
 	
 	// Initial Voxelization of the scenes
-	//cornell->CreateShadow();
-	//cornell->RenderData();
-	//cornell->Voxelize();
-	//cornell->MipMap();
+	cornell->CreateShadow();
+	cornell->RenderData();
+	cornell->Voxelize();
+	cornell->MipMap();
 
-	sponza->CreateShadow();
-	sponza->RenderData();
-	sponza->Voxelize();
-	sponza->MipMap();
+	//sponza->CreateShadow();
+	//sponza->RenderData();
+	//sponza->Voxelize();
+	//sponza->MipMap();
 
 	// Add information to the antbar
 	TwAddVarRO(antBar, "FPS", TW_TYPE_FLOAT, &FPS, " group=Info ");
 	TwAddVarRO(antBar, "Cam Pos", cam->GetCameraTwType(), cam->GetCameraInfo(), NULL);
-	TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
+	//TwAddVarRW(antBar, "Cam Speed", TW_TYPE_FLOAT, cam->GetSpeedPtr(), " min=0 max=2000 step=10 group=Controls ");
 	TwAddVarRW(antBar, "Cam Rot Speed", TW_TYPE_FLOAT, cam->GetRotSpeedPtr(), " min=0.0 max=0.010 step=0.001 group=Controls ");
 
 	sceneType = TwDefineEnumFromString("Scene Selection", "Cornell, Sponza");
@@ -343,6 +361,8 @@ void Program::OnEvent(SDL_Event *Event) {
 		case SDL_MOUSEBUTTONUP:
 			TwMouseButton(TW_MOUSE_RELEASED, TW_MOUSE_LEFT);
 			break;
+		case SDL_MOUSEWHEEL:
+			cam->Zoom(1.0f + 0.05f * Event->wheel.y);
 		default:
 			break;
 	}
@@ -375,30 +395,36 @@ void Program::OnKeypress(SDL_Event *Event) {
 }
 
 void Program::OnMouseMove(SDL_Event *Event) {
-	if(!SDL_GetRelativeMouseMode())
+	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+	if(!SDL_GetRelativeMouseMode()) {
 		TwMouseMotion(Event->motion.x, Event->motion.y);
-	else
-		cam->Rotate(Event->motion.xrel, Event->motion.yrel);
+	} else {
+		if(keystate[SDL_SCANCODE_LCTRL]) {
+			GetCurrentScene()->PanLight((GLfloat)Event->motion.xrel, (GLfloat)Event->motion.yrel);
+		} else {
+			cam->Rotate(Event->motion.xrel, Event->motion.yrel);
+		}
+	}
 }
 
 void Program::CheckKeyDowns() {
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 	if(keystate[SDL_SCANCODE_W]) {
-		cam->MoveForward();
+		//cam->MoveForward();
 	}
 	if(keystate[SDL_SCANCODE_S]) {
-		cam->MoveBackward();
+		//cam->MoveBackward();
 	}
 	if(keystate[SDL_SCANCODE_A]) {
-		cam->MoveLeft();
+		//cam->MoveLeft();
 	}
 	if(keystate[SDL_SCANCODE_D]) {
-		cam->MoveRight();
+		//cam->MoveRight();
 	}
 	if(keystate[SDL_SCANCODE_Q]) {
-		cam->MoveUp();
+		//cam->MoveUp();
 	}
 	if(keystate[SDL_SCANCODE_E]) {
-		cam->MoveDown();
+		//cam->MoveDown();
 	}
 }

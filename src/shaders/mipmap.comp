@@ -11,8 +11,8 @@ layout(local_size_x = 64) in;
 
 layout(location = 7) uniform uint currentLevel;
 
-layout(location = 4) uniform layout(r32ui) uimage3D voxelData;
-layout(location = 5) uniform layout(r32ui) uimage3D voxelDataNextLevel;
+layout(binding = 3, r32ui) uniform uimage3D voxelData;
+layout(binding = 4, r32ui) uniform uimage3D voxelDataNextLevel;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];

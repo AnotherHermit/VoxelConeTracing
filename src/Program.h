@@ -47,6 +47,14 @@ private:
 
 	bool isRunning;
 
+	GLint runNumber, takeTime;
+	GLint takeFrameTime, frame;
+	GLuint runScene;
+	GLfloat sceneAverage[5];
+	GLfloat sceneStatic[2];
+	GLfloat frameAverage;
+	GLuint sceneNum;
+
 	Timer time;
 	GLfloat FPS;
 	ProgramStruct param;
@@ -54,7 +62,7 @@ private:
 
 	bool useOrtho;
 	bool drawVoxelOverlay;
-	FPCamera* cam;
+	OrbitCamera* cam;
 	TwBar* antBar;
 
 	// Shaders
@@ -66,9 +74,12 @@ private:
 	TwType sceneType;
 
 	// Program params
-	glm::vec3 cameraStartPos;
+	GLfloat cameraStartDistance;
+	GLfloat cameraStartAzimuth;
+	GLfloat cameraStartPolar;
+	glm::vec3 cameraStartTarget;
 	GLfloat cameraFrustumFar;
-	GLfloat cameraFovStart;
+	GLfloat cameraStartFov;
 
 	// Methods
 	void UploadParams();

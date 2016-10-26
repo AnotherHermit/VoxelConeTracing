@@ -113,7 +113,7 @@ bool Scene::InitAntBar() {
 		resTwType = new TwType;
 		*resTwType = TwDefineEnum("Resolution", resTwEnum, 6);
 
-		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=15 " };
+		sceneTwMembers[0] = { "DrawVoxelData", TW_TYPE_UINT32, offsetof(SceneParam, voxelDraw), " min=0 max=4 " };
 		sceneTwMembers[1] = { "Direction", *viewTwType, offsetof(SceneParam, view), "  " };
 		sceneTwMembers[2] = { "Resolution", *resTwType, offsetof(SceneParam, voxelRes), "  " };
 		sceneTwMembers[3] = { "Layer", TW_TYPE_UINT32, offsetof(SceneParam, voxelLayer), " min=0 max=511  " };
@@ -271,7 +271,7 @@ void Scene::SetupSceneTextures() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
 	if(sceneFBO == 0) {
 		glGenFramebuffers(1, &sceneFBO);
@@ -296,13 +296,13 @@ void Scene::SetupShadowTexture() {
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, options.shadowRes, options.shadowRes);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, options.shadowRes, options.shadowRes);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
 	glGenFramebuffers(1, &shadowFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);

@@ -42,8 +42,9 @@ vec3 CalculateNormal(vec3 a, vec3 b, vec3 c) {
 
 void main()
 {
-	vec3 dir = abs(CalculateNormal(gl_in[0].gl_Position.xyz, gl_in[1].gl_Position.xyz, gl_in[2].gl_Position.xyz));
+	vec3 dir = CalculateNormal(gl_in[0].gl_Position.xyz, gl_in[1].gl_Position.xyz, gl_in[2].gl_Position.xyz);
 	exNormal = dir;
+	dir = abs(dir);
 	float maxComponent = max(dir.x, max(dir.y, dir.z));
 	uint ind = maxComponent == dir.x ? 0 : maxComponent == dir.y ? 1 : 2;
 	domInd = ind;

@@ -14,11 +14,11 @@ in vec3 exNormal;
 flat in uint domInd;
 
 layout(location = 0) uniform vec3 diffColor;
-layout(location = 1) uniform sampler2D diffuseUnit;
 
-layout(location = 3) uniform layout(r32ui) uimage2DArray voxelTextures;
-layout(location = 4) uniform layout(r32ui) uimage3D voxelData;
-layout(location = 6) uniform sampler2D shadowMap;
+layout(binding = 0) uniform sampler2D diffuseUnit;
+layout(binding = 2, r32ui) uniform uimage2DArray voxelTextures;
+layout(binding = 3, r32ui) uniform uimage3D voxelData;
+layout(binding = 5) uniform sampler2DShadow shadowMap;
 
 struct SceneParams {
 	mat4 MTOmatrix[3];
@@ -110,7 +110,7 @@ layout(location = 0) subroutine uniform SampleColor GetColor;
 void main()
 {	
 	// Set constant color for textured models
-	VoxelData data = VoxelData(GetColor(), 0x0, 0x8);
+	VoxelData data = VoxelData(vec4(0.0f), 0x0, 0x8);
 
 	ivec3 voxelCoord;
 	int depthCoord = int(gl_FragCoord.z * scene.voxelRes);
@@ -124,18 +124,19 @@ void main()
 	}
 
 	// Calculate shadows
-	vec3 lightCoord = shadowCoord.xyz / 2;
-	lightCoord += vec3(0.5f);
+	vec3 s = shadowCoord.xyz * 0.5f + 0.5f;
+    vec3 l = scene.lightDir;
+    float cosTheta = max(dot(l,normalize(exNormal)), 0.0f);
+    float b = 0.005f*tan(acos(cosTheta));
+    b = clamp(b, 0.0f,0.02f);
+    s.z = s.z - b;
 
-	float shadowDepth = texture(shadowMap, lightCoord.xy).r;
-	float cosTheta = clamp(dot(normalize(exNormal), normalize(scene.lightDir)), 0.0f, 1.0f);
-	float bias = 0.005*tan(acos(cosTheta));
-	bias = clamp(bias, 0.0f, 0.01f);
+	float shadow = texture(shadowMap, s.xyz);
+	data.light = uint(8.0f * (1.0f - shadow));
 
-	if(shadowDepth > lightCoord.z - bias) {
-		data.light = 0x8;
-	}
-
+	// Set color
+	data.color = GetColor() * cosTheta;
+	
 	uint outData = packARGB8(data);
 
 	imageAtomicMax(voxelTextures, ivec3(ivec2(gl_FragCoord.xy), domInd), outData);

@@ -20,8 +20,8 @@ layout(location = 3) out vec4 outTangent;
 layout(location = 4) out vec4 outBiTangent;
 
 layout(location = 0) uniform vec3 diffColor;
-layout(location = 1) uniform sampler2D diffuseUnit;
-layout(location = 2) uniform sampler2D maskUnit;
+layout(binding = 0) uniform sampler2D diffuseUnit;
+layout(binding = 1) uniform sampler2D maskUnit;
 
 subroutine vec4 SampleColor();
 
@@ -47,6 +47,6 @@ void main()
 	outNormal = vec4(normalize(exNormal), 1.0f);
 	outTangent = vec4(normalize(exTangent), 1.0f);
 	outBiTangent = vec4(normalize(exBiTangent), 1.0f);
-	outPosition = exPosition / exPosition.w;
+	outPosition = exPosition;
 	outColor = GetColor();
 }

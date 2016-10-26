@@ -15,7 +15,7 @@ out vec4 outPosition;
 out vec3 outNormal;
 out vec4 outColor;
 
-layout(location = 4) uniform usampler3D voxelData;
+layout(binding = 3) uniform usampler3D voxelData;
 
 struct Camera {
 	mat4 WTVmatrix;
