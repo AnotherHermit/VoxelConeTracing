@@ -26,16 +26,16 @@ TwType* Scene::compIndTwStruct = nullptr;
 
 Scene::Scene() {
 	options.skipNoTexture = false;
+	options.drawTextures = false;
 	options.drawModels = true;
 	options.drawVoxels = false;
-	options.drawTextures = false;
 	options.shadowRes = 512;
 
 	param.lightDir = glm::vec3(0.58f, 0.58f, 0.58f);
-	param.voxelRes = 256;
+	param.voxelRes = RES256;
 	param.voxelLayer = 0;
 	param.voxelDraw = 0;
-	param.view = 0;
+	param.view = VIEW_X;
 	param.numMipLevels = (GLuint)log2(param.voxelRes);
 	param.mipLevel = 0;
 
@@ -244,9 +244,9 @@ void Scene::SetupVoxelTextures() {
 	glTexStorage3D(GL_TEXTURE_3D, param.numMipLevels + 1, GL_R32UI, param.voxelRes, param.voxelRes, param.voxelRes);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 void Scene::SetupSceneTextures() {
@@ -316,18 +316,11 @@ void Scene::SetupShadowTexture() {
 }
 
 void Scene::SetupShadowMatrix() {
-	param.lightDir = glm::normalize(param.lightDir);
-	glm::vec3 z = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 l = param.lightDir;
-	glm::vec3 axis = glm::cross(l, z);
-	if(glm::length(axis) < glm::epsilon<float>()) {
-		param.MTShadowMatrix = glm::scale(glm::vec3(1.0f / sqrt(3.0f))) * param.MTOmatrix[2];
-	} else {
-		axis = normalize(axis);
-		GLfloat angle = acos(glm::dot(z, l));
+	glm::vec3 o = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 y = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 l = glm::normalize(param.lightDir);
 
-		param.MTShadowMatrix = glm::rotate(angle, axis) * glm::scale(glm::vec3(1.0f / sqrt(3.0f)));
-	}
+	param.MTShadowMatrix = glm::lookAt(o, l, y) * glm::scale(glm::vec3(1.0f / sqrtf(3.0f)));
 	
 	// TODO: Only update the buffer after light direction has actually changed
 	// Upload new params to GPU
@@ -537,6 +530,26 @@ void Scene::DrawVoxels() {
 	glBindTexture(GL_TEXTURE_3D, voxelTex);
 
 	glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(sizeof(DrawElementsIndirectCommand) * param.mipLevel));
+}
+
+void Scene::PanLight(GLfloat dx, GLfloat dy) {
+	GLfloat polar = acos(param.lightDir.y);
+	GLfloat azimuth = atan2f(param.lightDir.z, param.lightDir.x);
+
+	float eps = 0.001f;
+	float rspeed = 0.001f;
+
+	azimuth += rspeed * dx;
+	polar -= rspeed * dy;
+
+	azimuth = (float)fmod(azimuth, 2.0f * (float)M_PI);
+	polar = polar < (float)M_PI - eps ? (polar > eps ? polar : eps) : (float)M_PI - eps;
+
+	param.lightDir = glm::vec3(sin(polar) * cos(azimuth),
+							   cos(polar),
+							   sin(polar) * sin(azimuth));
+
+	UpdateBuffers();
 }
 
 void Scene::PrintDrawIndCmd() {

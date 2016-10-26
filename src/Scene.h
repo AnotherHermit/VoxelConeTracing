@@ -90,10 +90,7 @@ private:
 
 	// Sparse List Buffer
 	GLuint sparseListBuffer;
-
-	// MipMap Stuff
-	GLuint shadowVAO;
-
+	
 	// FBOs
 	GLuint voxelFBO; //		Empty framebuffer for voxelization
 	GLuint shadowFBO; //	Framebuffer with depth texture for shadowmap
@@ -159,6 +156,8 @@ public:
 
 	void UpdateBuffers();
 	void SetupSceneTextures();
+
+	void PanLight(GLfloat dx, GLfloat dy);
 
 	// AntTweakBar
 	float* GetLightDir() { return glm::value_ptr(param.lightDir); }
