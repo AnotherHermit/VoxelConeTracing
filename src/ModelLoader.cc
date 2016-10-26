@@ -20,12 +20,12 @@
 
 #include <iostream>
 
-bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex) {
+bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, glm::vec3** outMaxVertex, glm::vec3** outMinVertex) {
 	if(!LoadModels(path)) return false;
 	if(!LoadTextures()) return false;
 
 	// Read all models
-	if(!AddModels(outModels, initShaders)) return false;
+	if(!AddModels(outModels)) return false;
 
 	// Find the size of the scene
 	if(!CalculateMinMax(outMaxVertex, outMinVertex)) return false;
@@ -37,7 +37,7 @@ bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, Sh
 	return true;
 }
 
-bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
+bool ModelLoader::LoadModel(const char* path, Model* outModel) {
 	if(!LoadModels(path)) return false;
 
 	// Load standard vertex data needed by all models, also creates VAO
@@ -50,8 +50,8 @@ bool ModelLoader::LoadModel(const char* path, Model* outModel, GLuint shader) {
 	return true;
 }
 
-bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders) {
-	return LoadScene(path, outModels, initShaders, nullptr, nullptr);
+bool ModelLoader::LoadScene(const char* path, std::vector<Model*>* outModels) {
+	return LoadScene(path, outModels, nullptr, nullptr);
 }
 
 bool ModelLoader::LoadModels(const char* path) {
@@ -160,14 +160,9 @@ GLuint ModelLoader::LoadTexture(const char* path) {
 	return texID;
 }
 
-bool ModelLoader::AddModels(std::vector<Model*>* models, ShaderList* shaders) {
+bool ModelLoader::AddModels(std::vector<Model*>* models) {
 	if(models == nullptr) {
 		std::cout << "No model vector was supplied when loading scene" << std::endl;
-		return false;
-	}
-
-	if(shaders == nullptr) {
-		std::cout << "No shader list was supplied when loading scene" << std::endl;
 		return false;
 	}
 
@@ -234,15 +229,23 @@ void ModelLoader::CalculateTangents() {
 	for(auto shape = shapes.begin(); shape != shapes.end(); shape++) {
 
 		// Check vertex data for min and max corners
-		for(auto normal = shape->mesh.normals.begin(); normal!= shape->mesh.normals.end() - 3; normal += 3) {
+		for(auto normal = shape->mesh.normals.begin();
+			normal != shape->mesh.normals.end() - 3; normal += 3) {
 			glm::vec3 currentNormal = glm::normalize(glm::vec3(normal[0], normal[1], normal[2]));
+			glm::vec3 yVec = glm::vec3(0.0f, 1.0f, 0.0f);
+			glm::vec3 zVec = glm::vec3(0.0f, 0.0f, 1.0f);
+			glm::vec3 tempTan1 = glm::cross(yVec, currentNormal);
+			glm::vec3 tempTan2 = glm::cross(currentNormal, zVec);
 
 			float a = normal[0];
 			float b = normal[1];
 			float c = normal[2];
 
-			glm::vec3 tangCand[] = { glm::vec3(-b - c,a,a), glm::vec3(c,c, -a - b) };
-			int tangSelect = int((c > glm::epsilon<float>()) && (-a - b > glm::epsilon<float>()));
+			//            glm::vec3 tangCand[] = {glm::vec3(-b - c, a, a), glm::vec3(c, c, -a - b)};
+			//            int tangSelect = int((c > glm::epsilon<float>()) && (-a - b > glm::epsilon<float>()));
+			glm::vec3 tangCand[] = { tempTan1, tempTan2 };
+			//            float res = glm::length(tempTan1);
+			int tangSelect = int(glm::length(tempTan1) < glm::epsilon<float>());
 			glm::vec3 tangent = glm::normalize(tangCand[tangSelect]);
 			glm::vec3 bitangent = normalize(cross(currentNormal, tangent));
 

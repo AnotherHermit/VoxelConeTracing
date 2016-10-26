@@ -149,7 +149,7 @@ bool Scene::InitAntBar() {
 
 bool Scene::SetupScene(const char* path) {
 	ModelLoader modelLoader;
-	if(!modelLoader.LoadScene(path, models, shaders, &maxVertex, &minVertex)) {
+	if(!modelLoader.LoadScene(path, models, &maxVertex, &minVertex)) {
 		std::cout << "Failed to load scene: " << path << std::endl;
 		return false;
 	}
@@ -172,7 +172,7 @@ bool Scene::SetupScene(const char* path) {
 bool Scene::InitVoxel() {
 	// Load a model for drawing the voxel
 	ModelLoader modelLoader;
-	if(!modelLoader.LoadModel("resources/voxelLarge.obj", voxelModel, shaders->voxel)) {
+	if(!modelLoader.LoadModel("resources/voxelLarge.obj", voxelModel)) {
 		std::cout << "Failed to load voxel model" << std::endl;
 		return false;
 	}

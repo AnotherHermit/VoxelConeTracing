@@ -25,7 +25,7 @@ private:
 	// Needed since multiple functions refer to this one
 	std::vector<TextureData*> textures;
 	
-	bool AddModels(std::vector<Model*>* models, ShaderList* shaders);
+	bool AddModels(std::vector<Model*>* models);
 	bool CalculateMinMax(glm::vec3** maxVertex, glm::vec3** minVertex);
 
 	bool LoadModels(const char* path);
@@ -36,10 +36,10 @@ private:
 public:
 	ModelLoader() {};
 
-	bool LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders);
-	bool LoadScene(const char* path, std::vector<Model*>* outModels, ShaderList* initShaders, glm::vec3** outMaxVertex, glm::vec3** outMinVertex);
+	bool LoadScene(const char* path, std::vector<Model*>* outModels);
+	bool LoadScene(const char* path, std::vector<Model*>* outModels, glm::vec3** outMaxVertex, glm::vec3** outMinVertex);
 
-	bool LoadModel(const char* path, Model* outModel, GLuint shader);
+	bool LoadModel(const char* path, Model* outModel);
 
 	GLuint LoadTexture(const char* path);
 };
