@@ -336,7 +336,7 @@ void Program::ToggleProgram() {
 		takeTime++;
 	}
 
-	if(takeTime > 3) {
+	if(takeTime > 6) {
 		takeTime = 0;
 	}
 }
