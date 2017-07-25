@@ -31,8 +31,8 @@ Program::Program() {
 
 	// Set program parameters
 	cameraStartDistance = 2.9f;
-	cameraStartAzimuth = (GLfloat)M_PI / 2.0f;//(GLfloat)M_PI / 2.0f; (GLfloat)M_PI / 4.0f;
-	cameraStartPolar = (GLfloat)M_PI / 2.3f;//(GLfloat) M_PI / 2.3f; (GLfloat) M_PI / 1.8f;
+	cameraStartAzimuth = (GLfloat)M_PI / 4.0f;//(GLfloat)M_PI / 2.0f; (GLfloat)M_PI / 4.0f;
+	cameraStartPolar = (GLfloat)M_PI / 1.8f;//(GLfloat) M_PI / 2.3f; (GLfloat) M_PI / 1.8f;
 	cameraStartTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 	cameraStartFov = 60.0f;
 	cameraFrustumFar = 5000.0f;
@@ -41,7 +41,7 @@ Program::Program() {
 	useOrtho = false;
 	drawVoxelOverlay = false;
 
-	takeTime = 1;
+	takeTime = 0;
 	runNumber = 0;
 	runScene = 0;
 	sceneAverage[0] = 0.0f;

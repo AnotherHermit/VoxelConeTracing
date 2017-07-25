@@ -174,7 +174,7 @@ vec4 voxelSampleLevel(vec3 position, float level) {
 
         VoxelData voxel = unpackARGB8(textureLod(voxelData, voxelPos, mip).r);
         if(any(greaterThan(voxelPos, vec3(1.0f))) || any(lessThan(voxelPos, vec3(0.0f)))) {
-//            count -= factor;
+//           count -= factor;
             factor = 0.0f;
         }
 
@@ -295,7 +295,7 @@ float ShadowMapping(vec3 p, vec3 n) {
 
     vec3 l = scene.lightDir;
     float cosTheta = max(dot(l,n), 0.0f);
-    float b = 0.005f*tan(acos(cosTheta));
+    float b = 0.005f; //*tan(acos(cosTheta));
     b = clamp(b, 0.0f,0.02f);
     s.z = s.z - b;
 
@@ -327,6 +327,7 @@ vec4 Basic() {
 	vec4 f = vec4(1.0f);
 	f.xyz = c.xyz * (0.05f + l.y + 0.2f * l.z);
 
+	//return SceneColor();
     return f;
 
 }
@@ -348,6 +349,7 @@ vec4 BasicShadows() {
 	vec4 f = vec4(1.0f);
 	f.xyz = c.xyz * (0.05f + (l.y + 0.2f * l.z) * s);
 
+	//return ScenePosition();
     return f;
 }
 
@@ -373,6 +375,7 @@ vec4 BasicAOShadows() {
 	vec4 f = vec4(1.0f);
 	f.xyz = c.xyz * (0.05f * d.w + (l.y + 0.2f * l.z) * s);
 
+	//return SceneNormal();
     return f;
 }
 
@@ -396,8 +399,9 @@ vec4 GIAOShadows() {
 
 	s = mix(d.w, s * d.w, a);
 	vec4 f = vec4(1.0f);
-	f.xyz = l.y * s * c.xyz + d.xyz * c.xyz;
+	f.xyz = l.y * s * c.xyz + 2.0f * d.xyz * c.xyz;
 
+	//return SceneTangent();
     return f;
 }
 
@@ -421,8 +425,9 @@ vec4 GIAOSoftShadows() {
 
 	s = mix(d.w, s * d.w, a);
 	vec4 f = vec4(1.0f);
-	f.xyz = l.y * s * c.xyz + d.xyz * c.xyz;
+	f.xyz = l.y * s * c.xyz + 2.0f * d.xyz * c.xyz;
 
+	//return vec4(vec3(1.0f - ShadowMapping(p,n)), 1.0f);
     return f;
 }
 
